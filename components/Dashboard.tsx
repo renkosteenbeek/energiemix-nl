@@ -1,133 +1,258 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { HourStrip } from "./HourStrip";
-import { Insights } from "./Insights";
-import { QuickJump } from "./QuickJump";
-import { SourcesDetail } from "./SourcesDetail";
-import { SustainabilityHero } from "./SustainabilityHero";
-import type { Facts } from "@/lib/insights";
-import type { MixResult } from "@/lib/ned";
+import { useMemo } from "react";
+import {
+  colorForGreenPct,
+  colorForGreenPctSoft,
+  type SourceSlice,
+  type TimePoint,
+} from "@/lib/ned";
+import { theme } from "@/lib/theme";
+import {
+  amsterdamAt,
+  JUMPS,
+  longDateLabel,
+  nowHourIso,
+  temporalLabel,
+} from "@/lib/time";
+import { useDashboardState, type DashboardInitial } from "@/lib/useDashboardState";
+import { AllSources } from "./AllSources";
+import { Timeline } from "./Timeline";
 
-type Snapshot = {
-  mix: MixResult;
-  facts: Facts;
-};
-
-export type DashboardInitial = {
-  at: string;
-  mix: MixResult;
-  facts: Facts;
-  story: string;
-};
-
-export function Dashboard({ initial }: { initial: DashboardInitial }) {
-  const [focusIso, setFocusIso] = useState(initial.at);
-  const [snapshot, setSnapshot] = useState<Snapshot>({ mix: initial.mix, facts: initial.facts });
-  const [story, setStory] = useState<string | null>(initial.story || null);
-  const [mixLoading, setMixLoading] = useState(false);
-  const [storyLoading, setStoryLoading] = useState(false);
-
-  const snapshotCacheRef = useRef(new Map<string, Snapshot>([[initial.at, { mix: initial.mix, facts: initial.facts }]]));
-  const storyCacheRef = useRef(new Map<string, string>(initial.story ? [[initial.at, initial.story]] : []));
-  const mixAbortRef = useRef<AbortController | null>(null);
-  const storyAbortRef = useRef<AbortController | null>(null);
-  const currentRequestRef = useRef<string>(initial.at);
-
-  const select = useCallback((iso: string) => {
-    setFocusIso(iso);
-  }, []);
-
-  useEffect(() => {
-    currentRequestRef.current = focusIso;
-
-    const cachedSnap = snapshotCacheRef.current.get(focusIso);
-    const cachedStory = storyCacheRef.current.get(focusIso);
-
-    if (cachedSnap) {
-      setSnapshot(cachedSnap);
-      setMixLoading(false);
-    } else {
-      setMixLoading(true);
-      mixAbortRef.current?.abort();
-      const ctrl = new AbortController();
-      mixAbortRef.current = ctrl;
-      fetch(`/api/mix?at=${encodeURIComponent(focusIso)}`, { signal: ctrl.signal })
-        .then((r) => r.json())
-        .then((data: { mix: MixResult; facts: Facts; error?: string }) => {
-          if (currentRequestRef.current !== focusIso) return;
-          if (data.error || !data.mix) return;
-          const snap: Snapshot = { mix: data.mix, facts: data.facts };
-          snapshotCacheRef.current.set(focusIso, snap);
-          setSnapshot(snap);
-          setMixLoading(false);
-        })
-        .catch((err) => {
-          if (err.name !== "AbortError") setMixLoading(false);
-        });
-    }
-
-    if (cachedStory) {
-      setStory(cachedStory);
-      setStoryLoading(false);
-    } else {
-      setStory("");
-      setStoryLoading(true);
-      storyAbortRef.current?.abort();
-      const ctrl = new AbortController();
-      storyAbortRef.current = ctrl;
-
-      (async () => {
-        try {
-          const res = await fetch(`/api/story?at=${encodeURIComponent(focusIso)}`, {
-            signal: ctrl.signal,
-          });
-          if (!res.body) {
-            setStoryLoading(false);
-            return;
-          }
-          const reader = res.body.getReader();
-          const decoder = new TextDecoder();
-          let acc = "";
-          while (true) {
-            const { value, done } = await reader.read();
-            if (done) break;
-            const chunk = decoder.decode(value, { stream: true });
-            acc += chunk;
-            if (currentRequestRef.current !== focusIso) return;
-            setStory(acc);
-          }
-          if (currentRequestRef.current !== focusIso) return;
-          if (acc.trim()) storyCacheRef.current.set(focusIso, acc.trim());
-          setStoryLoading(false);
-        } catch (err) {
-          if ((err as Error).name !== "AbortError") setStoryLoading(false);
-        }
-      })();
-    }
-
-    return () => {
-      mixAbortRef.current?.abort();
-      storyAbortRef.current?.abort();
-    };
-  }, [focusIso]);
+export function Dashboard({
+  initial,
+  timeline,
+}: {
+  initial: DashboardInitial;
+  timeline: TimePoint[];
+}) {
+  const { focusIso, select, snapshot, story, mixLoading, storyLoading } =
+    useDashboardState(initial);
 
   return (
-    <>
-      <SustainabilityHero
-        greenPct={snapshot.mix.greenPct}
-        validfrom={snapshot.mix.focusTime}
-        loading={mixLoading}
-      />
+    <main className="min-h-screen w-full" style={{ background: theme.bg, color: theme.ink }}>
+      <div className="max-w-[640px] mx-auto px-5 sm:px-6">
+        <Header mixLoading={mixLoading} />
 
-      <div className="flex flex-col gap-3">
-        <HourStrip focusIso={focusIso} onSelect={select} />
-        <QuickJump focusIso={focusIso} onSelect={select} />
+        <div className="pt-6 pb-4">
+          <Hero
+            greenPct={snapshot.mix.greenPct}
+            validfrom={snapshot.mix.focusTime}
+          />
+        </div>
+
+        <section className="pt-8 pb-10" style={{ borderTop: `1px solid ${theme.rule}` }}>
+          <Timeline timeline={timeline} focusIso={focusIso} onSelect={select} />
+          <QuickJumps focusIso={focusIso} onSelect={select} />
+        </section>
+
+        <section className="py-10" style={{ borderTop: `1px solid ${theme.rule}` }}>
+          <SectionLabel>Duiding</SectionLabel>
+          <Duiding story={story} loading={storyLoading} />
+        </section>
+
+        <section className="py-10" style={{ borderTop: `1px solid ${theme.rule}` }}>
+          <SectionLabel>Grootste bronnen</SectionLabel>
+          <TopSourcePills sources={snapshot.mix.sources} />
+        </section>
+
+        <section className="pb-6" style={{ borderTop: `1px solid ${theme.rule}` }}>
+          <AllSources sources={snapshot.mix.sources} />
+        </section>
       </div>
+    </main>
+  );
+}
 
-      <Insights story={story} facts={snapshot.facts} storyLoading={storyLoading} />
+function Header({ mixLoading }: { mixLoading: boolean }) {
+  return (
+    <header
+      className="py-5 flex items-center justify-between"
+      style={{ borderBottom: `1px solid ${theme.rule}` }}
+    >
+      <div
+        className="text-[11px] uppercase tracking-[0.2em]"
+        style={{ color: theme.dim }}
+      >
+        Energiemix NL
+      </div>
+      <div
+        className="w-3 h-3 rounded-full border-t-transparent animate-spin transition-opacity duration-200"
+        style={{
+          border: `1px solid ${theme.dim}`,
+          borderTopColor: "transparent",
+          opacity: mixLoading ? 0.8 : 0,
+        }}
+      />
+    </header>
+  );
+}
 
-      <SourcesDetail sources={snapshot.mix.sources} />
-    </>
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      className="text-[10px] uppercase tracking-[0.26em] mb-5"
+      style={{ color: theme.dim }}
+    >
+      {children}
+    </div>
+  );
+}
+
+function Hero({ greenPct, validfrom }: { greenPct: number; validfrom: string }) {
+  const top = colorForGreenPct(greenPct);
+  const bottom = colorForGreenPctSoft(greenPct);
+  const rounded = Math.round(greenPct);
+
+  return (
+    <section
+      className="relative w-full rounded-[28px] overflow-hidden transition-all duration-500"
+      style={{
+        background: `radial-gradient(130% 110% at 28% 0%, ${top} 0%, ${bottom} 72%, #0a0a0a 140%)`,
+        boxShadow:
+          "0 16px 50px -24px rgba(11,11,10,0.25), 0 2px 6px -2px rgba(11,11,10,0.08)",
+      }}
+    >
+      <div className="px-7 pt-8 pb-10 sm:pt-9 sm:pb-11 flex flex-col">
+        <div
+          className="text-[11px] uppercase tracking-[0.2em] text-white/70 first-letter:uppercase"
+        >
+          {longDateLabel(validfrom)}
+        </div>
+        <div className="mt-2 flex items-baseline">
+          <div
+            className="font-semibold tabular-nums text-white leading-none"
+            style={{ fontSize: "clamp(6rem, 32vw, 13rem)", letterSpacing: "-0.05em" }}
+          >
+            {rounded}
+          </div>
+          <div
+            className="text-white/85 font-light ml-1"
+            style={{ fontSize: "clamp(2rem, 7vw, 3.5rem)" }}
+          >
+            %
+          </div>
+        </div>
+        <div className="mt-1 text-2xl sm:text-[26px] text-white/95 font-light tracking-tight">
+          duurzaam{" "}
+          <span className="text-white/60">· {temporalLabel(validfrom)}</span>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Duiding({
+  story,
+  loading,
+}: {
+  story: string | null;
+  loading: boolean;
+}) {
+  return (
+    <div className="min-h-[76px]">
+      {story && story.length > 0 ? (
+        <p
+          className="text-[18px] sm:text-[19px] leading-[1.55] font-light text-pretty"
+          style={{ color: theme.ink }}
+        >
+          {story}
+          {loading && (
+            <span
+              className="inline-block w-[2px] h-[1.1em] ml-1 -mb-[2px] align-middle animate-pulse"
+              style={{ background: theme.ink, opacity: 0.7 }}
+            />
+          )}
+        </p>
+      ) : loading ? (
+        <div className="space-y-2.5">
+          <div className="h-3 rounded-full" style={{ background: theme.rule2, width: "86%" }} />
+          <div className="h-3 rounded-full" style={{ background: theme.rule2, width: "72%" }} />
+          <div className="h-3 rounded-full" style={{ background: theme.rule2, width: "54%" }} />
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function TopSourcePills({ sources }: { sources: SourceSlice[] }) {
+  const top3 = sources.filter((s) => s.percentage >= 1).slice(0, 3);
+  if (top3.length === 0) return null;
+
+  return (
+    <div className="flex flex-wrap gap-2">
+      {top3.map((s) => (
+        <div
+          key={s.typeId}
+          className="inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-[13px]"
+          style={{ background: theme.chip, border: `1px solid ${theme.rule}` }}
+        >
+          <span className="w-1.5 h-1.5 rounded-full" style={{ background: s.color }} />
+          <span className="font-medium" style={{ color: theme.ink }}>
+            {s.label}
+          </span>
+          <span className="tabular-nums font-semibold" style={{ color: theme.ink }}>
+            {s.percentage.toFixed(0)}%
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function QuickJumps({
+  focusIso,
+  onSelect,
+}: {
+  focusIso: string;
+  onSelect: (iso: string) => void;
+}) {
+  const referenceNowIso = useMemo(() => nowHourIso(), []);
+  const isNow = focusIso === referenceNowIso;
+
+  return (
+    <div className="mt-10 flex flex-wrap gap-2">
+      <JumpButton active={isNow} onClick={() => onSelect(referenceNowIso)}>
+        Nu
+      </JumpButton>
+      {JUMPS.map((j) => {
+        const iso = amsterdamAt(j.hour, j.offsetDays);
+        return (
+          <JumpButton
+            key={j.label}
+            active={iso === focusIso}
+            onClick={() => onSelect(iso)}
+          >
+            {j.label}
+          </JumpButton>
+        );
+      })}
+    </div>
+  );
+}
+
+function JumpButton({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="px-4 py-2 rounded-full text-[13px] cursor-pointer transition-colors"
+      style={{
+        background: active ? theme.ink : theme.bg,
+        color: active ? theme.bg : theme.ink,
+        border: `1px solid ${active ? theme.ink : theme.rule}`,
+        fontWeight: active ? 500 : 400,
+      }}
+    >
+      {children}
+    </button>
   );
 }

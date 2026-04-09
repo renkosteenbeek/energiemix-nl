@@ -11,7 +11,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: "#000000",
+  themeColor: "#FAFAF7",
 };
 
 export default function RootLayout({
@@ -21,7 +21,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="nl" className="h-full antialiased">
-      <body className="min-h-full bg-black text-neutral-100">{children}</body>
+      <body className="min-h-full" style={{ background: "#FAFAF7", color: "#0B0B0A" }}>
+        {children}
+      </body>
     </html>
   );
 }
