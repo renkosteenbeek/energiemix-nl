@@ -212,6 +212,70 @@ export async function getMixAt(at: Date): Promise<MixResult> {
   };
 }
 
+async function fetchGreenSeries(
+  from: Date,
+  to: Date,
+  classification: number,
+): Promise<TimePoint[]> {
+  const perType = await Promise.all(
+    SOURCES.map(async (s) => ({
+      source: s,
+      data: await fetchUtilizations({
+        typeId: s.typeId,
+        classification,
+        after: dateOnly(from),
+        before: dateOnly(new Date(to.getTime() + 24 * 60 * 60 * 1000)),
+      }),
+    })),
+  );
+  const buckets = mergeIntoBuckets(perType);
+  return bucketsToSeries(buckets).filter((p) => {
+    const t = new Date(p.time).getTime();
+    return t >= from.getTime() && t <= to.getTime();
+  });
+}
+
+export async function getGreenTimeline(
+  centerAt: Date,
+  hoursBack: number,
+  hoursForward: number,
+): Promise<TimePoint[]> {
+  const from = new Date(centerAt.getTime() - hoursBack * 60 * 60 * 1000);
+  const to = new Date(centerAt.getTime() + hoursForward * 60 * 60 * 1000);
+  const now = Date.now();
+  const cutoff = now + 30 * 60 * 1000;
+
+  const ranges: { from: Date; to: Date; classification: number }[] = [];
+
+  if (from.getTime() < cutoff) {
+    ranges.push({
+      from,
+      to: new Date(Math.min(to.getTime(), cutoff)),
+      classification: CLASSIFICATION.current,
+    });
+  }
+
+  if (to.getTime() > cutoff) {
+    ranges.push({
+      from: new Date(Math.max(from.getTime(), cutoff)),
+      to,
+      classification: CLASSIFICATION.forecast,
+    });
+  }
+
+  const results = await Promise.all(
+    ranges.map((r) => fetchGreenSeries(r.from, r.to, r.classification)),
+  );
+
+  const merged = new Map<string, TimePoint>();
+  for (const arr of results) {
+    for (const p of arr) {
+      if (!merged.has(p.time)) merged.set(p.time, p);
+    }
+  }
+  return [...merged.values()].sort((a, b) => a.time.localeCompare(b.time));
+}
+
 export async function getMixSeries(from: Date, to: Date): Promise<TimePoint[]> {
   const classification = pickClassification(new Date((from.getTime() + to.getTime()) / 2));
 
