@@ -38,6 +38,17 @@ export function Dashboard({
     [select],
   );
 
+  const panByHours = useCallback(
+    (hours: number) => {
+      const newFocus = new Date(
+        new Date(focusIso).getTime() + hours * 3600000,
+      ).toISOString();
+      setWindowOffset((prev) => prev + hours);
+      select(newFocus);
+    },
+    [focusIso, select],
+  );
+
   return (
     <main className="min-h-screen w-full" style={{ background: theme.bg, color: theme.ink }}>
       <div className="max-w-[640px] mx-auto px-5 sm:px-6">
@@ -56,7 +67,7 @@ export function Dashboard({
             focusIso={focusIso}
             onSelect={select}
             windowOffset={windowOffset}
-            onWindowOffsetChange={setWindowOffset}
+            onPan={panByHours}
           />
           <QuickJumps focusIso={focusIso} onSelect={selectAndResetWindow} />
         </section>

@@ -21,7 +21,7 @@ export default async function Page() {
   try {
     const [mix, rawTimeline] = await Promise.all([
       getMixAt(at),
-      getGreenTimeline(new Date(), 72, 72),
+      getGreenTimeline(new Date(), 720, 120),
     ]);
     timeline = rawTimeline;
     const facts = await computeFacts(at, mix);

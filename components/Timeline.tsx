@@ -8,11 +8,9 @@ import { useTimeScrubber, type HourCell } from "@/lib/useTimeScrubber";
 
 const HOURS_BACK = 24;
 const HOURS_FORWARD = 48;
-const DATA_BACK = 72;
-const DATA_FORWARD = 72;
+const DATA_BACK = 720;
+const DATA_FORWARD = 120;
 const PAN_STEP = 24;
-const PAN_MIN = HOURS_BACK - DATA_BACK;
-const PAN_MAX = DATA_FORWARD - HOURS_FORWARD;
 
 type Bar = HourCell & {
   greenPct: number | null;
@@ -24,13 +22,13 @@ export function Timeline({
   focusIso,
   onSelect,
   windowOffset,
-  onWindowOffsetChange,
+  onPan,
 }: {
   timeline: TimePoint[];
   focusIso: string;
   onSelect: (iso: string) => void;
   windowOffset: number;
-  onWindowOffsetChange: (offset: number) => void;
+  onPan: (deltaHours: number) => void;
 }) {
   const { cells, indicatorPct, nowPct, bindings, previewIso } = useTimeScrubber({
     focusIso,
@@ -65,13 +63,17 @@ export function Timeline({
   const previewGreen =
     previewBar?.greenPct != null ? Math.round(previewBar.greenPct) : null;
 
-  const canPanBack = windowOffset > PAN_MIN;
-  const canPanForward = windowOffset < PAN_MAX;
+  const focusHourOffset = useMemo(() => {
+    const nowH = new Date();
+    nowH.setUTCMinutes(0, 0, 0);
+    return Math.round((new Date(focusIso).getTime() - nowH.getTime()) / 3600000);
+  }, [focusIso]);
 
-  const panBack = () =>
-    onWindowOffsetChange(Math.max(PAN_MIN, windowOffset - PAN_STEP));
-  const panForward = () =>
-    onWindowOffsetChange(Math.min(PAN_MAX, windowOffset + PAN_STEP));
+  const canPanBack = focusHourOffset - PAN_STEP >= -DATA_BACK;
+  const canPanForward = focusHourOffset + PAN_STEP <= DATA_FORWARD;
+
+  const panBack = () => canPanBack && onPan(-PAN_STEP);
+  const panForward = () => canPanForward && onPan(PAN_STEP);
 
   return (
     <div className="w-full select-none">

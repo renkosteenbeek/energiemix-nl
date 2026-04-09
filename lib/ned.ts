@@ -10,15 +10,15 @@ export type SourceMeta = {
 };
 
 export const SOURCES: SourceMeta[] = [
-  { typeId: 17, label: "Wind op zee",  category: "groen", color: "#0F5132" },
-  { typeId: 1,  label: "Wind op land", category: "groen", color: "#198754" },
-  { typeId: 2,  label: "Zon",          category: "groen", color: "#65C46A" },
-  { typeId: 25, label: "Biomassa",     category: "groen", color: "#A7E3A7" },
-  { typeId: 18, label: "Aardgas",      category: "grijs", color: "#4B5563" },
-  { typeId: 19, label: "Steenkool",    category: "grijs", color: "#374151" },
-  { typeId: 20, label: "Kernenergie",  category: "grijs", color: "#6B7280" },
-  { typeId: 21, label: "Afval",        category: "grijs", color: "#7C7268" },
-  { typeId: 26, label: "Overig",       category: "grijs", color: "#9CA3AF" },
+  { typeId: 17, label: "Wind op zee",  category: "groen", color: "#1B4F7E" },
+  { typeId: 1,  label: "Wind op land", category: "groen", color: "#5896D1" },
+  { typeId: 2,  label: "Zon",          category: "groen", color: "#F5B13B" },
+  { typeId: 25, label: "Biomassa",     category: "groen", color: "#7C956E" },
+  { typeId: 18, label: "Aardgas",      category: "grijs", color: "#E07A4E" },
+  { typeId: 19, label: "Steenkool",    category: "grijs", color: "#2B2A28" },
+  { typeId: 20, label: "Kernenergie",  category: "grijs", color: "#8E5BA7" },
+  { typeId: 21, label: "Afval",        category: "grijs", color: "#9B7E5A" },
+  { typeId: 26, label: "Overig",       category: "grijs", color: "#8D95A0" },
 ];
 
 export const SOURCE_BY_TYPE = new Map(SOURCES.map((s) => [s.typeId, s]));
@@ -70,7 +70,7 @@ async function fetchUtilizations(params: {
     "validfrom[strictly_after]": params.after,
     "validfrom[strictly_before]": params.before,
     "order[validfrom]": "asc",
-    itemsPerPage: "200",
+    itemsPerPage: "1000",
   });
 
   const res = await fetch(`${BASE}/utilizations?${qs}`, {
@@ -78,7 +78,7 @@ async function fetchUtilizations(params: {
       "X-AUTH-TOKEN": apiKey,
       Accept: "application/ld+json",
     },
-    cache: "no-store",
+    next: { revalidate: 300 },
   });
 
   if (!res.ok) {
