@@ -8,13 +8,12 @@ import { useTimeScrubber, type HourCell } from "@/lib/useTimeScrubber";
 
 const HOURS_BACK = 24;
 const HOURS_FORWARD = 48;
-const DATA_BACK = 720;
-const DATA_FORWARD = 120;
 const PAN_STEP = 24;
 
 type Bar = HourCell & {
   greenPct: number | null;
-  isFuture: boolean;
+  isForecast: boolean;
+  hasData: boolean;
 };
 
 export function Timeline({
@@ -38,17 +37,40 @@ export function Timeline({
     windowOffsetHours: windowOffset,
   });
 
-  const bars = useMemo<Bar[]>(() => {
-    const byHour = new Map<number, number>();
+  const timelineIndex = useMemo(() => {
+    const byHour = new Map<number, { greenPct: number; forecast: boolean }>();
     for (const p of timeline) {
-      byHour.set(new Date(p.time).getTime(), p.greenPct);
+      byHour.set(new Date(p.time).getTime(), {
+        greenPct: p.greenPct,
+        forecast: p.forecast ?? false,
+      });
     }
-    return cells.map((cell) => ({
-      ...cell,
-      greenPct: byHour.get(cell.t.getTime()) ?? null,
-      isFuture: cell.hoursFromNow > 0,
-    }));
-  }, [cells, timeline]);
+    return byHour;
+  }, [timeline]);
+
+  const timelineBounds = useMemo(() => {
+    if (timeline.length === 0) return { earliest: 0, latest: 0 };
+    let earliest = Infinity;
+    let latest = -Infinity;
+    for (const p of timeline) {
+      const t = new Date(p.time).getTime();
+      if (t < earliest) earliest = t;
+      if (t > latest) latest = t;
+    }
+    return { earliest, latest };
+  }, [timeline]);
+
+  const bars = useMemo<Bar[]>(() => {
+    return cells.map((cell) => {
+      const entry = timelineIndex.get(cell.t.getTime());
+      return {
+        ...cell,
+        greenPct: entry?.greenPct ?? null,
+        isForecast: entry?.forecast ?? cell.hoursFromNow > 0,
+        hasData: entry != null,
+      };
+    });
+  }, [cells, timelineIndex]);
 
   const dayBoundaries = bars
     .map((bar, i) => ({ bar, i }))
@@ -63,17 +85,25 @@ export function Timeline({
   const previewGreen =
     previewBar?.greenPct != null ? Math.round(previewBar.greenPct) : null;
 
-  const focusHourOffset = useMemo(() => {
-    const nowH = new Date();
-    nowH.setUTCMinutes(0, 0, 0);
-    return Math.round((new Date(focusIso).getTime() - nowH.getTime()) / 3600000);
+  const focusMs = useMemo(() => {
+    const d = new Date(focusIso);
+    d.setUTCMinutes(0, 0, 0);
+    return d.getTime();
   }, [focusIso]);
 
-  const canPanBack = focusHourOffset - PAN_STEP >= -DATA_BACK;
-  const canPanForward = focusHourOffset + PAN_STEP <= DATA_FORWARD;
+  const canPanBack = focusMs - PAN_STEP * 3600000 >= timelineBounds.earliest;
+  const canPanForward = focusMs + PAN_STEP * 3600000 <= timelineBounds.latest;
 
   const panBack = () => canPanBack && onPan(-PAN_STEP);
   const panForward = () => canPanForward && onPan(PAN_STEP);
+
+  const forecastStartIndex = bars.findIndex((b) => b.isForecast);
+  const forecastStartPct =
+    forecastStartIndex >= 0 && bars.length > 1
+      ? forecastStartIndex / (bars.length - 1)
+      : null;
+
+  const previewForecast = previewBar?.isForecast ?? false;
 
   return (
     <div className="w-full select-none">
@@ -98,6 +128,14 @@ export function Timeline({
                 </span>
               </>
             )}
+            {previewForecast && (
+              <span
+                className="ml-2 text-[9px] uppercase tracking-[0.18em] align-middle"
+                style={{ color: theme.dim2 }}
+              >
+                forecast
+              </span>
+            )}
           </div>
         </div>
         <div className="flex gap-1 flex-shrink-0 ml-3">
@@ -107,6 +145,29 @@ export function Timeline({
       </div>
 
       <div className="relative">
+        {forecastStartPct != null && (
+          <>
+            <div
+              className="absolute top-0 bottom-0 pointer-events-none"
+              style={{
+                left: `${forecastStartPct * 100}%`,
+                right: 0,
+                background: "rgba(11, 11, 10, 0.035)",
+              }}
+            />
+            <div
+              className="absolute pointer-events-none text-[9px] uppercase tracking-[0.18em]"
+              style={{
+                left: `calc(${forecastStartPct * 100}% + 4px)`,
+                top: 2,
+                color: theme.dim2,
+              }}
+            >
+              forecast
+            </div>
+          </>
+        )}
+
         <div
           {...bindings}
           className="relative flex items-end gap-[1.5px] h-[96px] cursor-pointer touch-none"
@@ -172,11 +233,10 @@ export function Timeline({
 }
 
 function BarColumn({ bar }: { bar: Bar }) {
-  const hasData = bar.greenPct != null;
   const greenPct = bar.greenPct ?? 0;
   const hMin = 6;
   const hMax = 96;
-  const height = hasData ? Math.max(hMin, (greenPct / 100) * hMax) : hMin;
+  const height = bar.hasData ? Math.max(hMin, (greenPct / 100) * hMax) : hMin;
   return (
     <div
       className="flex-1 relative flex items-end pointer-events-none"
@@ -186,9 +246,9 @@ function BarColumn({ bar }: { bar: Bar }) {
         className="w-full transition-[height] duration-300 ease-out"
         style={{
           height: `${height}px`,
-          background: hasData ? colorForGreenPct(greenPct) : theme.emptyBar,
+          background: bar.hasData ? colorForGreenPct(greenPct) : theme.emptyBar,
           borderRadius: "1px",
-          opacity: bar.isFuture ? 0.92 : 1,
+          opacity: bar.isForecast ? 0.88 : 1,
         }}
       />
     </div>

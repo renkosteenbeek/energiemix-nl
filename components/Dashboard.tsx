@@ -82,9 +82,17 @@ export function Dashboard({
           <TopSourcePills sources={snapshot.mix.sources} />
         </section>
 
-        <section className="pb-6" style={{ borderTop: `1px solid ${theme.rule}` }}>
+        <section style={{ borderTop: `1px solid ${theme.rule}` }}>
           <AllSources sources={snapshot.mix.sources} />
         </section>
+
+        <footer
+          className="py-8 flex items-center justify-between text-[10px] uppercase tracking-[0.2em]"
+          style={{ borderTop: `1px solid ${theme.rule}`, color: theme.dim2 }}
+        >
+          <span>data van ned.nl</span>
+          <span>een product van Renko Steenbeek</span>
+        </footer>
       </div>
     </main>
   );

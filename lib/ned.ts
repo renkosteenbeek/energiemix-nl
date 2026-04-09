@@ -50,7 +50,7 @@ function dateOnly(d: Date): string {
 
 function pickClassification(at: Date): number {
   const now = Date.now();
-  return at.getTime() > now + 30 * 60 * 1000 ? CLASSIFICATION.forecast : CLASSIFICATION.current;
+  return at.getTime() > now - 60 * 60 * 1000 ? CLASSIFICATION.forecast : CLASSIFICATION.current;
 }
 
 async function fetchUtilizations(params: {
@@ -116,7 +116,10 @@ export type TimePoint = {
   time: string;
   greenPct: number;
   totalKWh: number;
+  forecast?: boolean;
 };
+
+const CRITICAL_FOSSIL_IDS = new Set<number>([18, 19]);
 
 export type MixResult = {
   focusTime: string;
@@ -226,11 +229,11 @@ export async function getMixAt(at: Date): Promise<MixResult> {
   };
 }
 
-async function fetchGreenSeries(
+async function fetchBuckets(
   from: Date,
   to: Date,
   classification: number,
-): Promise<TimePoint[]> {
+): Promise<Map<string, Bucket>> {
   const perType = await Promise.all(
     SOURCES.map(async (s) => ({
       source: s,
@@ -243,10 +246,11 @@ async function fetchGreenSeries(
     })),
   );
   const buckets = mergeIntoBuckets(perType);
-  return bucketsToSeries(buckets).filter((p) => {
-    const t = new Date(p.time).getTime();
-    return t >= from.getTime() && t <= to.getTime();
-  });
+  for (const time of [...buckets.keys()]) {
+    const t = new Date(time).getTime();
+    if (t < from.getTime() || t > to.getTime()) buckets.delete(time);
+  }
+  return buckets;
 }
 
 export async function getGreenTimeline(
@@ -278,16 +282,46 @@ export async function getGreenTimeline(
   }
 
   const results = await Promise.all(
-    ranges.map((r) => fetchGreenSeries(r.from, r.to, r.classification)),
+    ranges.map((r) => fetchBuckets(r.from, r.to, r.classification)),
   );
 
-  const merged = new Map<string, TimePoint>();
-  for (const arr of results) {
-    for (const p of arr) {
-      if (!merged.has(p.time)) merged.set(p.time, p);
+  const mergedBuckets = new Map<string, Bucket>();
+  for (const buckets of results) {
+    for (const [time, bucket] of buckets) {
+      if (!mergedBuckets.has(time)) mergedBuckets.set(time, bucket);
     }
   }
-  return [...merged.values()].sort((a, b) => a.time.localeCompare(b.time));
+
+  const nowHourStart = new Date(now);
+  nowHourStart.setUTCMinutes(0, 0, 0);
+  const nowHourStartMs = nowHourStart.getTime();
+
+  const sortedTimes = [...mergedBuckets.keys()].sort();
+  const series: TimePoint[] = [];
+
+  for (const time of sortedTimes) {
+    const bucket = mergedBuckets.get(time)!;
+    if (bucket.total <= 0) continue;
+    const tMs = new Date(time).getTime();
+    const isForecast = tMs >= nowHourStartMs;
+    const isStrictFuture = tMs > nowHourStartMs;
+
+    if (isStrictFuture) {
+      const hasCritical = [...CRITICAL_FOSSIL_IDS].every(
+        (id) => (bucket.bySource.get(id) ?? 0) > 0,
+      );
+      if (!hasCritical) break;
+    }
+
+    series.push({
+      time,
+      greenPct: (bucket.green / bucket.total) * 100,
+      totalKWh: bucket.total,
+      forecast: isForecast,
+    });
+  }
+
+  return series;
 }
 
 export async function getMixSeries(from: Date, to: Date): Promise<TimePoint[]> {
@@ -342,7 +376,6 @@ export function getBaseline(typeId: number, hourOfDay: number): Promise<number> 
 export function latestAvailableHour(): Date {
   const now = new Date();
   now.setMinutes(0, 0, 0);
-  now.setHours(now.getHours() - 1);
   return now;
 }
 

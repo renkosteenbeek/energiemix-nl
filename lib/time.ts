@@ -29,7 +29,6 @@ export function amsterdamAt(hour: number, offsetDays: number): string {
 export function nowHourIso(): string {
   const t = new Date();
   t.setUTCMinutes(0, 0, 0);
-  t.setUTCHours(t.getUTCHours() - 1);
   return t.toISOString();
 }
 
