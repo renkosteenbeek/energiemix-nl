@@ -6,8 +6,8 @@ import { theme } from "@/lib/theme";
 import { compactDateLabel, shortWeekday } from "@/lib/time";
 import { useTimeScrubber, type HourCell } from "@/lib/useTimeScrubber";
 
-const HOURS_BACK = 24;
-const HOURS_FORWARD = 48;
+const HOURS_BACK = 48;
+const HOURS_FORWARD = 24;
 const PAN_STEP = 24;
 
 type Bar = HourCell & {
@@ -91,8 +91,10 @@ export function Timeline({
     return d.getTime();
   }, [focusIso]);
 
-  const canPanBack = focusMs - PAN_STEP * 3600000 >= timelineBounds.earliest;
-  const canPanForward = focusMs + PAN_STEP * 3600000 <= timelineBounds.latest;
+  const canPanBack =
+    focusMs - (PAN_STEP + HOURS_BACK) * 3600000 >= timelineBounds.earliest;
+  const canPanForward =
+    focusMs + (PAN_STEP + HOURS_FORWARD) * 3600000 <= timelineBounds.latest;
 
   const panBack = () => canPanBack && onPan(-PAN_STEP);
   const panForward = () => canPanForward && onPan(PAN_STEP);
