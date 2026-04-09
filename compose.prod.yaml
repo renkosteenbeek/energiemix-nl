@@ -1,19 +1,18 @@
 services:
   app:
-    build:
-      context: .
-    image: energiemix-nl:latest
+    image: sjc.vultrcr.com/gentle/energiemix-nl:latest
     container_name: energiemix-nl
-    ports:
-      - "3000:3000"
-    environment:
-      NED_API_KEY: ${NED_API_KEY:?NED_API_KEY is required}
-      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
     restart: unless-stopped
+    env_file: .env
+    networks:
+      - proxy
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:3000/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 15s
+
+networks:
+  proxy:
+    external: true
