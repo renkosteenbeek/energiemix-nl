@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   colorForGreenPct,
   colorForGreenPctSoft,
@@ -28,6 +28,15 @@ export function Dashboard({
 }) {
   const { focusIso, select, snapshot, story, mixLoading, storyLoading } =
     useDashboardState(initial);
+  const [windowOffset, setWindowOffset] = useState(0);
+
+  const selectAndResetWindow = useCallback(
+    (iso: string) => {
+      setWindowOffset(0);
+      select(iso);
+    },
+    [select],
+  );
 
   return (
     <main className="min-h-screen w-full" style={{ background: theme.bg, color: theme.ink }}>
@@ -42,8 +51,14 @@ export function Dashboard({
         </div>
 
         <section className="pt-8 pb-10" style={{ borderTop: `1px solid ${theme.rule}` }}>
-          <Timeline timeline={timeline} focusIso={focusIso} onSelect={select} />
-          <QuickJumps focusIso={focusIso} onSelect={select} />
+          <Timeline
+            timeline={timeline}
+            focusIso={focusIso}
+            onSelect={select}
+            windowOffset={windowOffset}
+            onWindowOffsetChange={setWindowOffset}
+          />
+          <QuickJumps focusIso={focusIso} onSelect={selectAndResetWindow} />
         </section>
 
         <section className="py-10" style={{ borderTop: `1px solid ${theme.rule}` }}>

@@ -21,8 +21,8 @@ export type ScrubberBindings = {
 
 export type TimeScrubber = {
   cells: HourCell[];
-  indicatorPct: number;
-  nowPct: number;
+  indicatorPct: number | null;
+  nowPct: number | null;
   previewIso: string;
   isDragging: boolean;
   bindings: ScrubberBindings;
@@ -34,8 +34,9 @@ export function useTimeScrubber(options: {
   onSelect: (iso: string) => void;
   hoursBack: number;
   hoursForward: number;
+  windowOffsetHours?: number;
 }): TimeScrubber {
-  const { focusIso, onSelect, hoursBack, hoursForward } = options;
+  const { focusIso, onSelect, hoursBack, hoursForward, windowOffsetHours = 0 } = options;
   const trackRef = useRef<HTMLDivElement | null>(null);
   const draggingRef = useRef(false);
   const dragIsoRef = useRef<string | null>(null);
@@ -47,11 +48,13 @@ export function useTimeScrubber(options: {
     return d;
   }, []);
 
-  const total = hoursBack + hoursForward + 1;
+  const windowStart = -hoursBack + windowOffsetHours;
+  const windowEnd = hoursForward + windowOffsetHours;
+  const total = windowEnd - windowStart + 1;
 
   const cells = useMemo<HourCell[]>(() => {
     const arr: HourCell[] = [];
-    for (let i = -hoursBack; i <= hoursForward; i++) {
+    for (let i = windowStart; i <= windowEnd; i++) {
       const t = new Date(nowHour.getTime() + i * 3600000);
       const amsH =
         parseInt(
@@ -72,7 +75,7 @@ export function useTimeScrubber(options: {
       });
     }
     return arr;
-  }, [nowHour, hoursBack, hoursForward]);
+  }, [nowHour, windowStart, windowEnd]);
 
   const effectiveIso = dragIso ?? focusIso;
 
@@ -83,9 +86,11 @@ export function useTimeScrubber(options: {
   }, [effectiveIso]);
 
   const hourOffset = Math.round((effectiveHourMs - nowHour.getTime()) / 3600000);
-  const clamped = Math.max(-hoursBack, Math.min(hoursForward, hourOffset));
-  const indicatorPct = total > 1 ? (clamped + hoursBack) / (total - 1) : 0;
-  const nowPct = total > 1 ? hoursBack / (total - 1) : 0;
+  const focusInWindow = hourOffset >= windowStart && hourOffset <= windowEnd;
+  const indicatorPct =
+    focusInWindow && total > 1 ? (hourOffset - windowStart) / (total - 1) : null;
+  const nowInWindow = windowStart <= 0 && 0 <= windowEnd;
+  const nowPct = nowInWindow && total > 1 ? (0 - windowStart) / (total - 1) : null;
 
   const pickCellFromX = useCallback(
     (clientX: number): HourCell | null => {
@@ -147,11 +152,11 @@ export function useTimeScrubber(options: {
   const step = useCallback(
     (delta: number) => {
       const base = Math.round((effectiveHourMs - nowHour.getTime()) / 3600000);
-      const next = Math.max(-hoursBack, Math.min(hoursForward, base + delta));
+      const next = base + delta;
       const iso = new Date(nowHour.getTime() + next * 3600000).toISOString();
       if (iso !== focusIso) onSelect(iso);
     },
-    [effectiveHourMs, hoursBack, hoursForward, nowHour, focusIso, onSelect],
+    [effectiveHourMs, nowHour, focusIso, onSelect],
   );
 
   return {

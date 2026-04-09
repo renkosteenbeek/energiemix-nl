@@ -3,17 +3,19 @@
 import { useMemo } from "react";
 import { colorForGreenPct, type TimePoint } from "@/lib/ned";
 import { theme } from "@/lib/theme";
-import { amsterdamHour, compactDateLabel, shortWeekday } from "@/lib/time";
-import { useTimeScrubber } from "@/lib/useTimeScrubber";
+import { compactDateLabel, shortWeekday } from "@/lib/time";
+import { useTimeScrubber, type HourCell } from "@/lib/useTimeScrubber";
 
 const HOURS_BACK = 24;
 const HOURS_FORWARD = 48;
+const DATA_BACK = 72;
+const DATA_FORWARD = 72;
+const PAN_STEP = 24;
+const PAN_MIN = HOURS_BACK - DATA_BACK;
+const PAN_MAX = DATA_FORWARD - HOURS_FORWARD;
 
-type Bar = {
-  iso: string;
-  t: Date;
+type Bar = HourCell & {
   greenPct: number | null;
-  isMidnightAms: boolean;
   isFuture: boolean;
 };
 
@@ -21,42 +23,34 @@ export function Timeline({
   timeline,
   focusIso,
   onSelect,
+  windowOffset,
+  onWindowOffsetChange,
 }: {
   timeline: TimePoint[];
   focusIso: string;
   onSelect: (iso: string) => void;
+  windowOffset: number;
+  onWindowOffsetChange: (offset: number) => void;
 }) {
-  const { indicatorPct, nowPct, bindings, step, previewIso } = useTimeScrubber({
+  const { cells, indicatorPct, nowPct, bindings, previewIso } = useTimeScrubber({
     focusIso,
     onSelect,
     hoursBack: HOURS_BACK,
     hoursForward: HOURS_FORWARD,
+    windowOffsetHours: windowOffset,
   });
-
-  const nowHour = useMemo(() => {
-    const d = new Date();
-    d.setUTCMinutes(0, 0, 0);
-    return d;
-  }, []);
 
   const bars = useMemo<Bar[]>(() => {
     const byHour = new Map<number, number>();
     for (const p of timeline) {
       byHour.set(new Date(p.time).getTime(), p.greenPct);
     }
-    const arr: Bar[] = [];
-    for (let i = -HOURS_BACK; i <= HOURS_FORWARD; i++) {
-      const t = new Date(nowHour.getTime() + i * 3600000);
-      arr.push({
-        iso: t.toISOString(),
-        t,
-        greenPct: byHour.get(t.getTime()) ?? null,
-        isMidnightAms: amsterdamHour(t) === 0,
-        isFuture: i > 0,
-      });
-    }
-    return arr;
-  }, [timeline, nowHour]);
+    return cells.map((cell) => ({
+      ...cell,
+      greenPct: byHour.get(cell.t.getTime()) ?? null,
+      isFuture: cell.hoursFromNow > 0,
+    }));
+  }, [cells, timeline]);
 
   const dayBoundaries = bars
     .map((bar, i) => ({ bar, i }))
@@ -71,17 +65,25 @@ export function Timeline({
   const previewGreen =
     previewBar?.greenPct != null ? Math.round(previewBar.greenPct) : null;
 
+  const canPanBack = windowOffset > PAN_MIN;
+  const canPanForward = windowOffset < PAN_MAX;
+
+  const panBack = () =>
+    onWindowOffsetChange(Math.max(PAN_MIN, windowOffset - PAN_STEP));
+  const panForward = () =>
+    onWindowOffsetChange(Math.min(PAN_MAX, windowOffset + PAN_STEP));
+
   return (
     <div className="w-full select-none">
       <div className="flex items-end justify-between mb-4">
-        <div>
+        <div className="min-w-0 flex-1">
           <div
             className="text-[10px] uppercase tracking-[0.26em] mb-1"
             style={{ color: theme.dim }}
           >
             Dagritme
           </div>
-          <div className="text-[13px] first-letter:uppercase" style={{ color: theme.ink }}>
+          <div className="text-[13px] first-letter:uppercase truncate" style={{ color: theme.ink }}>
             {previewLabel}
             {previewGreen != null && (
               <>
@@ -96,9 +98,9 @@ export function Timeline({
             )}
           </div>
         </div>
-        <div className="flex gap-1">
-          <StepButton direction="back" onClick={() => step(-1)} />
-          <StepButton direction="forward" onClick={() => step(1)} />
+        <div className="flex gap-1 flex-shrink-0 ml-3">
+          <PanButton direction="back" enabled={canPanBack} onClick={panBack} />
+          <PanButton direction="forward" enabled={canPanForward} onClick={panForward} />
         </div>
       </div>
 
@@ -113,39 +115,43 @@ export function Timeline({
           ))}
         </div>
 
-        <div
-          className="absolute top-0 bottom-0 pointer-events-none"
-          style={{
-            left: `${nowPct * 100}%`,
-            width: 1,
-            background: theme.ink,
-            opacity: 0.35,
-            transform: "translateX(-0.5px)",
-          }}
-        />
-
-        <div
-          className="absolute pointer-events-none transition-[left] duration-150 ease-out"
-          style={{
-            left: `${indicatorPct * 100}%`,
-            top: -10,
-            bottom: -4,
-            width: 2,
-            background: theme.ink,
-            transform: "translateX(-1px)",
-          }}
-        >
+        {nowPct != null && (
           <div
-            className="absolute -left-[3px] -top-[3px]"
+            className="absolute top-0 bottom-0 pointer-events-none"
             style={{
-              width: 8,
-              height: 8,
+              left: `${nowPct * 100}%`,
+              width: 1,
               background: theme.ink,
-              borderRadius: "1px",
-              transform: "rotate(45deg)",
+              opacity: 0.35,
+              transform: "translateX(-0.5px)",
             }}
           />
-        </div>
+        )}
+
+        {indicatorPct != null && (
+          <div
+            className="absolute pointer-events-none transition-[left] duration-150 ease-out"
+            style={{
+              left: `${indicatorPct * 100}%`,
+              top: -10,
+              bottom: -4,
+              width: 2,
+              background: theme.ink,
+              transform: "translateX(-1px)",
+            }}
+          >
+            <div
+              className="absolute -left-[3px] -top-[3px]"
+              style={{
+                width: 8,
+                height: 8,
+                background: theme.ink,
+                borderRadius: "1px",
+                transform: "rotate(45deg)",
+              }}
+            />
+          </div>
+        )}
       </div>
 
       <div
@@ -153,19 +159,11 @@ export function Timeline({
         style={{ borderTop: `1px solid ${theme.rule2}` }}
       >
         {dayBoundaries.map((d) => (
-          <AxisLabel
-            key={d.pct}
-            leftPct={d.pct}
-            text={d.label}
-            color={theme.dim2}
-          />
+          <AxisLabel key={d.pct} leftPct={d.pct} text={d.label} color={theme.dim2} />
         ))}
-        <AxisLabel
-          leftPct={nowPct}
-          text="nu"
-          color={theme.ink}
-          bold
-        />
+        {nowPct != null && (
+          <AxisLabel leftPct={nowPct} text="nu" color={theme.ink} bold />
+        )}
       </div>
     </div>
   );
@@ -220,22 +218,30 @@ function AxisLabel({
   );
 }
 
-function StepButton({
+function PanButton({
   direction,
+  enabled,
   onClick,
 }: {
   direction: "back" | "forward";
+  enabled: boolean;
   onClick: () => void;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className="w-7 h-7 rounded-full flex items-center justify-center text-[12px] cursor-pointer transition-colors"
-      style={{ color: theme.ink, border: `1px solid ${theme.rule}` }}
-      aria-label={direction === "back" ? "uur terug" : "uur vooruit"}
+      disabled={!enabled}
+      className="w-8 h-8 rounded-full flex items-center justify-center text-[15px] transition-opacity"
+      style={{
+        color: theme.ink,
+        border: `1px solid ${theme.rule}`,
+        opacity: enabled ? 1 : 0.3,
+        cursor: enabled ? "pointer" : "not-allowed",
+      }}
+      aria-label={direction === "back" ? "dag eerder" : "dag later"}
     >
-      {direction === "back" ? "←" : "→"}
+      {direction === "back" ? "«" : "»"}
     </button>
   );
 }
