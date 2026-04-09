@@ -1,0 +1,290 @@
+const BASE = "https://api.ned.nl/v1";
+
+export type Category = "groen" | "grijs";
+
+export type SourceMeta = {
+  typeId: number;
+  label: string;
+  category: Category;
+  color: string;
+};
+
+export const SOURCES: SourceMeta[] = [
+  { typeId: 17, label: "Wind op zee",  category: "groen", color: "#0F5132" },
+  { typeId: 1,  label: "Wind op land", category: "groen", color: "#198754" },
+  { typeId: 2,  label: "Zon",          category: "groen", color: "#65C46A" },
+  { typeId: 25, label: "Biomassa",     category: "groen", color: "#A7E3A7" },
+  { typeId: 18, label: "Aardgas",      category: "grijs", color: "#4B5563" },
+  { typeId: 19, label: "Steenkool",    category: "grijs", color: "#374151" },
+  { typeId: 20, label: "Kernenergie",  category: "grijs", color: "#6B7280" },
+  { typeId: 21, label: "Afval",        category: "grijs", color: "#7C7268" },
+  { typeId: 26, label: "Overig",       category: "grijs", color: "#9CA3AF" },
+];
+
+export const SOURCE_BY_TYPE = new Map(SOURCES.map((s) => [s.typeId, s]));
+
+type Utilization = {
+  validfrom: string;
+  validto: string;
+  volume: number;
+  capacity: number;
+  percentage: number;
+};
+
+type HydraResponse<T> = {
+  "hydra:member": T[];
+  "hydra:totalItems": number;
+};
+
+const CLASSIFICATION = { forecast: 1, current: 2 } as const;
+
+export const NED_MIN_DATE = new Date("2016-01-01T00:00:00Z");
+export const NED_MAX_FORECAST_AHEAD_MS = 5 * 24 * 60 * 60 * 1000;
+
+function dateOnly(d: Date): string {
+  return d.toISOString().slice(0, 10);
+}
+
+function pickClassification(at: Date): number {
+  const now = Date.now();
+  return at.getTime() > now + 30 * 60 * 1000 ? CLASSIFICATION.forecast : CLASSIFICATION.current;
+}
+
+async function fetchUtilizations(params: {
+  typeId: number;
+  classification: number;
+  after: string;
+  before: string;
+  granularity?: number;
+}): Promise<Utilization[]> {
+  const apiKey = process.env.NED_API_KEY;
+  if (!apiKey) throw new Error("NED_API_KEY niet gezet");
+
+  const qs = new URLSearchParams({
+    point: "0",
+    type: String(params.typeId),
+    granularity: String(params.granularity ?? 5),
+    granularitytimezone: "1",
+    classification: String(params.classification),
+    activity: "1",
+    "validfrom[strictly_after]": params.after,
+    "validfrom[strictly_before]": params.before,
+    "order[validfrom]": "asc",
+    itemsPerPage: "200",
+  });
+
+  const res = await fetch(`${BASE}/utilizations?${qs}`, {
+    headers: {
+      "X-AUTH-TOKEN": apiKey,
+      Accept: "application/ld+json",
+    },
+    cache: "no-store",
+  });
+
+  if (!res.ok) {
+    throw new Error(`NED ${res.status}: ${await res.text()}`);
+  }
+
+  const json = (await res.json()) as HydraResponse<Utilization>;
+  return json["hydra:member"] ?? [];
+}
+
+export type SourceSlice = {
+  typeId: number;
+  label: string;
+  category: Category;
+  color: string;
+  volumeKWh: number;
+  percentage: number;
+};
+
+export type TimePoint = {
+  time: string;
+  greenPct: number;
+  totalKWh: number;
+};
+
+export type MixResult = {
+  focusTime: string;
+  greenPct: number;
+  totalKWh: number;
+  sources: SourceSlice[];
+  series: TimePoint[];
+};
+
+type Bucket = { total: number; green: number; bySource: Map<number, number> };
+
+function mergeIntoBuckets(perType: { source: SourceMeta; data: Utilization[] }[]): Map<string, Bucket> {
+  const buckets = new Map<string, Bucket>();
+  for (const { source, data } of perType) {
+    for (const u of data) {
+      const bucket = buckets.get(u.validfrom) ?? {
+        total: 0,
+        green: 0,
+        bySource: new Map<number, number>(),
+      };
+      bucket.total += u.volume;
+      if (source.category === "groen") bucket.green += u.volume;
+      bucket.bySource.set(source.typeId, (bucket.bySource.get(source.typeId) ?? 0) + u.volume);
+      buckets.set(u.validfrom, bucket);
+    }
+  }
+  return buckets;
+}
+
+function bucketsToSeries(buckets: Map<string, Bucket>): TimePoint[] {
+  return [...buckets.keys()]
+    .sort()
+    .map((t) => {
+      const b = buckets.get(t)!;
+      return {
+        time: t,
+        greenPct: b.total > 0 ? (b.green / b.total) * 100 : 0,
+        totalKWh: b.total,
+      };
+    })
+    .filter((p) => p.totalKWh > 0);
+}
+
+function pickFocus(series: TimePoint[], at: Date): TimePoint | undefined {
+  if (series.length === 0) return undefined;
+  const target = at.getTime();
+  let best = series[0];
+  let bestDiff = Math.abs(new Date(best.time).getTime() - target);
+  for (const p of series) {
+    const diff = Math.abs(new Date(p.time).getTime() - target);
+    if (diff < bestDiff) {
+      best = p;
+      bestDiff = diff;
+    }
+  }
+  return best;
+}
+
+export async function getMixAt(at: Date): Promise<MixResult> {
+  const classification = pickClassification(at);
+  const after = new Date(at.getTime() - 14 * 60 * 60 * 1000);
+  const before = new Date(at.getTime() + 14 * 60 * 60 * 1000);
+
+  const perType = await Promise.all(
+    SOURCES.map(async (s) => ({
+      source: s,
+      data: await fetchUtilizations({
+        typeId: s.typeId,
+        classification,
+        after: dateOnly(after),
+        before: dateOnly(new Date(before.getTime() + 24 * 60 * 60 * 1000)),
+      }),
+    })),
+  );
+
+  const buckets = mergeIntoBuckets(perType);
+  const fullSeries = bucketsToSeries(buckets);
+
+  const series = fullSeries.filter((p) => {
+    const t = new Date(p.time).getTime();
+    return t >= after.getTime() && t <= before.getTime();
+  });
+
+  const focus = pickFocus(series, at);
+  const focusBucket = focus ? buckets.get(focus.time) : undefined;
+
+  const sources: SourceSlice[] = SOURCES.map((s) => {
+    const vol = focusBucket?.bySource.get(s.typeId) ?? 0;
+    return {
+      typeId: s.typeId,
+      label: s.label,
+      category: s.category,
+      color: s.color,
+      volumeKWh: vol,
+      percentage: focusBucket && focusBucket.total > 0 ? (vol / focusBucket.total) * 100 : 0,
+    };
+  })
+    .filter((s) => s.volumeKWh > 0)
+    .sort((a, b) => b.volumeKWh - a.volumeKWh);
+
+  return {
+    focusTime: focus?.time ?? at.toISOString(),
+    greenPct: focus?.greenPct ?? 0,
+    totalKWh: focusBucket?.total ?? 0,
+    sources,
+    series,
+  };
+}
+
+export async function getMixSeries(from: Date, to: Date): Promise<TimePoint[]> {
+  const classification = pickClassification(new Date((from.getTime() + to.getTime()) / 2));
+
+  const perType = await Promise.all(
+    SOURCES.map(async (s) => ({
+      source: s,
+      data: await fetchUtilizations({
+        typeId: s.typeId,
+        classification,
+        after: dateOnly(from),
+        before: dateOnly(new Date(to.getTime() + 24 * 60 * 60 * 1000)),
+      }),
+    })),
+  );
+
+  const buckets = mergeIntoBuckets(perType);
+  return bucketsToSeries(buckets).filter((p) => {
+    const t = new Date(p.time).getTime();
+    return t >= from.getTime() && t <= to.getTime();
+  });
+}
+
+const baselineCache = new Map<string, Promise<number>>();
+
+export function getBaseline(typeId: number, hourOfDay: number): Promise<number> {
+  const key = `${typeId}:${hourOfDay}`;
+  const cached = baselineCache.get(key);
+  if (cached) return cached;
+
+  const promise = (async () => {
+    const before = new Date();
+    const after = new Date(before.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const data = await fetchUtilizations({
+      typeId,
+      classification: CLASSIFICATION.current,
+      after: dateOnly(after),
+      before: dateOnly(before),
+    });
+    const matching = data.filter((u) => new Date(u.validfrom).getUTCHours() === hourOfDay);
+    if (matching.length === 0) return 0;
+    const sum = matching.reduce((s, u) => s + u.volume, 0);
+    return sum / matching.length;
+  })();
+
+  baselineCache.set(key, promise);
+  setTimeout(() => baselineCache.delete(key), 6 * 60 * 60 * 1000).unref?.();
+  return promise;
+}
+
+export function latestAvailableHour(): Date {
+  const now = new Date();
+  now.setMinutes(0, 0, 0);
+  now.setHours(now.getHours() - 1);
+  return now;
+}
+
+export function clampAt(at: Date): Date {
+  const now = Date.now();
+  const min = NED_MIN_DATE.getTime();
+  const max = now + NED_MAX_FORECAST_AHEAD_MS;
+  return new Date(Math.min(Math.max(at.getTime(), min), max));
+}
+
+export function colorForGreenPct(pct: number): string {
+  if (pct < 30) return "#B91C1C";
+  if (pct < 50) return "#D97706";
+  if (pct < 70) return "#65C46A";
+  return "#0F5132";
+}
+
+export function colorForGreenPctSoft(pct: number): string {
+  if (pct < 30) return "#7F1D1D";
+  if (pct < 50) return "#92400E";
+  if (pct < 70) return "#166534";
+  return "#0B3D2A";
+}
