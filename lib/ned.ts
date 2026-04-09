@@ -257,21 +257,21 @@ export async function getGreenTimeline(
   const from = new Date(centerAt.getTime() - hoursBack * 60 * 60 * 1000);
   const to = new Date(centerAt.getTime() + hoursForward * 60 * 60 * 1000);
   const now = Date.now();
-  const cutoff = now + 30 * 60 * 1000;
+  const OVERLAP_MS = 3 * 60 * 60 * 1000;
 
   const ranges: { from: Date; to: Date; classification: number }[] = [];
 
-  if (from.getTime() < cutoff) {
+  if (from.getTime() < now) {
     ranges.push({
       from,
-      to: new Date(Math.min(to.getTime(), cutoff)),
+      to: new Date(Math.min(to.getTime(), now + OVERLAP_MS)),
       classification: CLASSIFICATION.current,
     });
   }
 
-  if (to.getTime() > cutoff) {
+  if (to.getTime() > now - OVERLAP_MS) {
     ranges.push({
-      from: new Date(Math.max(from.getTime(), cutoff)),
+      from: new Date(Math.max(from.getTime(), now - OVERLAP_MS)),
       to,
       classification: CLASSIFICATION.forecast,
     });
