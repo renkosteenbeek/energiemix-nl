@@ -34,6 +34,9 @@ type Utilization = {
 type HydraResponse<T> = {
   "hydra:member": T[];
   "hydra:totalItems": number;
+  "hydra:view"?: {
+    "hydra:next"?: string;
+  };
 };
 
 const CLASSIFICATION = { forecast: 1, current: 2 } as const;
@@ -70,23 +73,34 @@ async function fetchUtilizations(params: {
     "validfrom[strictly_after]": params.after,
     "validfrom[strictly_before]": params.before,
     "order[validfrom]": "asc",
-    itemsPerPage: "1000",
+    itemsPerPage: "200",
   });
 
-  const res = await fetch(`${BASE}/utilizations?${qs}`, {
-    headers: {
-      "X-AUTH-TOKEN": apiKey,
-      Accept: "application/ld+json",
-    },
-    next: { revalidate: 300 },
-  });
+  const collected: Utilization[] = [];
+  let nextUrl: string | null = `${BASE}/utilizations?${qs.toString()}`;
+  let safety = 50;
 
-  if (!res.ok) {
-    throw new Error(`NED ${res.status}: ${await res.text()}`);
+  while (nextUrl && safety-- > 0) {
+    const res: Response = await fetch(nextUrl, {
+      headers: {
+        "X-AUTH-TOKEN": apiKey,
+        Accept: "application/ld+json",
+      },
+      next: { revalidate: 300 },
+    });
+
+    if (!res.ok) {
+      throw new Error(`NED ${res.status}: ${await res.text()}`);
+    }
+
+    const json = (await res.json()) as HydraResponse<Utilization>;
+    collected.push(...(json["hydra:member"] ?? []));
+
+    const nextPath = json["hydra:view"]?.["hydra:next"];
+    nextUrl = nextPath ? new URL(nextPath, "https://api.ned.nl").toString() : null;
   }
 
-  const json = (await res.json()) as HydraResponse<Utilization>;
-  return json["hydra:member"] ?? [];
+  return collected;
 }
 
 export type SourceSlice = {
