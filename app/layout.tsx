@@ -12,7 +12,11 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: "cover",
-  themeColor: "#FAFAF7",
+  colorScheme: "light dark",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#FAFAF7" },
+    { media: "(prefers-color-scheme: dark)", color: "#141413" },
+  ],
 };
 
 export default function RootLayout({
@@ -22,9 +26,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="nl" className="h-full antialiased">
-      <body className="min-h-full" style={{ background: "#FAFAF7", color: "#0B0B0A" }}>
-        {children}
-      </body>
+      <body className="min-h-full">{children}</body>
     </html>
   );
 }

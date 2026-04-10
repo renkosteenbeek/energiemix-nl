@@ -15,7 +15,7 @@ export const SOURCES: SourceMeta[] = [
   { typeId: 2,  label: "Zon",          category: "groen", color: "#F5B13B" },
   { typeId: 25, label: "Biomassa",     category: "groen", color: "#7C956E" },
   { typeId: 18, label: "Aardgas",      category: "grijs", color: "#E07A4E" },
-  { typeId: 19, label: "Steenkool",    category: "grijs", color: "#2B2A28" },
+  { typeId: 19, label: "Steenkool",    category: "grijs", color: "var(--color-coal)" },
   { typeId: 20, label: "Kernenergie",  category: "grijs", color: "#8E5BA7" },
   { typeId: 21, label: "Afval",        category: "grijs", color: "#9B7E5A" },
   { typeId: 26, label: "Overig",       category: "grijs", color: "#8D95A0" },

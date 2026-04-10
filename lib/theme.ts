@@ -1,10 +1,10 @@
 export const theme = {
-  bg: "#FAFAF7",
-  ink: "#0B0B0A",
-  dim: "#6B6660",
-  dim2: "#97928A",
-  rule: "#E6E2D8",
-  rule2: "#EFEBE0",
-  chip: "#F2EEE4",
-  emptyBar: "#E0DBCC",
+  bg: "var(--color-bg)",
+  ink: "var(--color-ink)",
+  dim: "var(--color-dim)",
+  dim2: "var(--color-dim2)",
+  rule: "var(--color-rule)",
+  rule2: "var(--color-rule2)",
+  chip: "var(--color-chip)",
+  emptyBar: "var(--color-empty-bar)",
 } as const;

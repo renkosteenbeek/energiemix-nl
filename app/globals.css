@@ -5,9 +5,35 @@
     "Helvetica Neue", "Inter", system-ui, sans-serif;
 }
 
+:root {
+  --color-bg: #FAFAF7;
+  --color-ink: #0B0B0A;
+  --color-dim: #6B6660;
+  --color-dim2: #97928A;
+  --color-rule: #E6E2D8;
+  --color-rule2: #EFEBE0;
+  --color-chip: #F2EEE4;
+  --color-empty-bar: #E0DBCC;
+  --color-coal: #2B2A28;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #141413;
+    --color-ink: #E8E6E1;
+    --color-dim: #9C9891;
+    --color-dim2: #706C66;
+    --color-rule: #2A2926;
+    --color-rule2: #1F1F1D;
+    --color-chip: #252422;
+    --color-empty-bar: #2A2926;
+    --color-coal: #6B6862;
+  }
+}
+
 html, body {
-  background: #FAFAF7;
-  color: #0B0B0A;
+  background: var(--color-bg);
+  color: var(--color-ink);
   -webkit-font-smoothing: antialiased;
   font-feature-settings: "kern", "ss01", "cv11";
   letter-spacing: -0.01em;
@@ -16,6 +42,7 @@ html, body {
 html {
   text-size-adjust: 100%;
   -webkit-text-size-adjust: 100%;
+  color-scheme: light dark;
 }
 
 body {
