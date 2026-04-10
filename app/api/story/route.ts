@@ -1,8 +1,11 @@
 import { computeFacts } from "@/lib/insights";
-import { describeStream } from "@/lib/llm";
+import { describe, describeStream } from "@/lib/llm";
 import { clampAt, getMixAt, latestAvailableHour } from "@/lib/ned";
+import { cacheControl, withCors } from "@/lib/responseCache";
 
-export const dynamic = "force-dynamic";
+export async function OPTIONS() {
+  return new Response(null, { status: 204, headers: withCors({}) });
+}
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -20,6 +23,16 @@ export async function GET(request: Request) {
     const mix = await getMixAt(at);
     const facts = await computeFacts(at, mix);
 
+    const cached = await describe(facts);
+    if (cached) {
+      return new Response(cached, {
+        headers: withCors({
+          "Content-Type": "text/plain; charset=utf-8",
+          "Cache-Control": cacheControl(at),
+        }),
+      });
+    }
+
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       async start(controller) {
@@ -36,11 +49,11 @@ export async function GET(request: Request) {
     });
 
     return new Response(stream, {
-      headers: {
+      headers: withCors({
         "Content-Type": "text/plain; charset=utf-8",
-        "Cache-Control": "no-cache, no-transform",
+        "Cache-Control": cacheControl(at),
         "X-Accel-Buffering": "no",
-      },
+      }),
     });
   } catch (e) {
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "fout" }), {

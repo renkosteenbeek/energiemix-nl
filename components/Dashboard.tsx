@@ -1,12 +1,13 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   colorForGreenPct,
   colorForGreenPctSoft,
   type SourceSlice,
   type TimePoint,
 } from "@/lib/ned";
+import { apiUrl, isNativeBuild } from "@/lib/api";
 import { theme } from "@/lib/theme";
 import {
   amsterdamAt,
@@ -23,12 +24,23 @@ export function Dashboard({
   initial,
   timeline,
 }: {
-  initial: DashboardInitial;
+  initial: DashboardInitial | null;
   timeline: TimePoint[];
 }) {
   const { focusIso, select, snapshot, story, mixLoading, storyLoading } =
     useDashboardState(initial);
+  const [timelineData, setTimelineData] = useState<TimePoint[]>(timeline);
   const [windowOffset, setWindowOffset] = useState(0);
+
+  useEffect(() => {
+    if (timelineData.length > 0) return;
+    fetch(apiUrl("/api/timeline"))
+      .then((r) => r.json())
+      .then((data: TimePoint[]) => {
+        if (Array.isArray(data)) setTimelineData(data);
+      })
+      .catch(() => {});
+  }, []);
 
   const selectAndResetWindow = useCallback(
     (iso: string) => {
@@ -51,41 +63,53 @@ export function Dashboard({
 
   return (
     <main className="min-h-screen w-full" style={{ background: theme.bg, color: theme.ink }}>
-      <div className="max-w-[640px] mx-auto px-5 sm:px-6">
-        <Header mixLoading={mixLoading} />
+      <div
+        className="max-w-[640px] mx-auto px-5 sm:px-6"
+        style={{
+          paddingTop: "env(safe-area-inset-top)",
+          paddingBottom: "env(safe-area-inset-bottom)",
+        }}
+      >
+        {!isNativeBuild && <Header mixLoading={mixLoading} />}
 
-        <div className="pt-6 pb-4">
-          <Hero
-            greenPct={snapshot.mix.greenPct}
-            validfrom={snapshot.mix.focusTime}
-            totalKWh={snapshot.mix.totalKWh}
-          />
-        </div>
+        {snapshot ? (
+          <>
+            <div className="pt-6 pb-4">
+              <Hero
+                greenPct={snapshot.mix.greenPct}
+                validfrom={snapshot.mix.focusTime}
+                totalKWh={snapshot.mix.totalKWh}
+              />
+            </div>
 
-        <section className="pt-8 pb-10" style={{ borderTop: `1px solid ${theme.rule}` }}>
-          <Timeline
-            timeline={timeline}
-            focusIso={focusIso}
-            onSelect={select}
-            windowOffset={windowOffset}
-            onPan={panByHours}
-          />
-          <QuickJumps focusIso={focusIso} onSelect={selectAndResetWindow} />
-        </section>
+            <section className="pt-8 pb-10" style={{ borderTop: `1px solid ${theme.rule}` }}>
+              <Timeline
+                timeline={timelineData}
+                focusIso={focusIso}
+                onSelect={select}
+                windowOffset={windowOffset}
+                onPan={panByHours}
+              />
+              <QuickJumps focusIso={focusIso} onSelect={selectAndResetWindow} />
+            </section>
 
-        <section className="py-10" style={{ borderTop: `1px solid ${theme.rule}` }}>
-          <SectionLabel>Duiding</SectionLabel>
-          <Duiding story={story} loading={storyLoading} />
-        </section>
+            <section className="py-10" style={{ borderTop: `1px solid ${theme.rule}` }}>
+              <SectionLabel>Duiding</SectionLabel>
+              <Duiding story={story} loading={storyLoading} />
+            </section>
 
-        <section className="py-10" style={{ borderTop: `1px solid ${theme.rule}` }}>
-          <SectionLabel>Grootste bronnen</SectionLabel>
-          <TopSourcePills sources={snapshot.mix.sources} />
-        </section>
+            <section className="py-10" style={{ borderTop: `1px solid ${theme.rule}` }}>
+              <SectionLabel>Grootste bronnen</SectionLabel>
+              <TopSourcePills sources={snapshot.mix.sources} />
+            </section>
 
-        <section style={{ borderTop: `1px solid ${theme.rule}` }}>
-          <AllSources sources={snapshot.mix.sources} />
-        </section>
+            <section style={{ borderTop: `1px solid ${theme.rule}` }}>
+              <AllSources sources={snapshot.mix.sources} />
+            </section>
+          </>
+        ) : (
+          <LoadingSkeleton />
+        )}
 
         <footer
           className="py-8 flex items-center justify-between text-[10px] uppercase tracking-[0.2em]"
@@ -96,6 +120,19 @@ export function Dashboard({
         </footer>
       </div>
     </main>
+  );
+}
+
+function LoadingSkeleton() {
+  return (
+    <div className="pt-6 pb-4 space-y-6 animate-pulse">
+      <div className="rounded-[28px] h-[280px]" style={{ background: theme.rule2 }} />
+      <div className="space-y-3 pt-8">
+        <div className="h-3 rounded-full" style={{ background: theme.rule2, width: "70%" }} />
+        <div className="h-3 rounded-full" style={{ background: theme.rule2, width: "100%" }} />
+        <div className="h-3 rounded-full" style={{ background: theme.rule2, width: "45%" }} />
+      </div>
+    </div>
   );
 }
 

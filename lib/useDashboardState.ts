@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { apiUrl } from "./api";
 import type { Facts } from "./insights";
 import type { MixResult } from "./ned";
 
@@ -19,28 +20,37 @@ export type DashboardInitial = {
 export type DashboardState = {
   focusIso: string;
   select: (iso: string) => void;
-  snapshot: Snapshot;
+  snapshot: Snapshot | null;
   story: string | null;
   mixLoading: boolean;
   storyLoading: boolean;
 };
 
-export function useDashboardState(initial: DashboardInitial): DashboardState {
-  const [focusIso, setFocusIso] = useState(initial.at);
-  const [snapshot, setSnapshot] = useState<Snapshot>({ mix: initial.mix, facts: initial.facts });
-  const [story, setStory] = useState<string | null>(initial.story || null);
-  const [mixLoading, setMixLoading] = useState(false);
-  const [storyLoading, setStoryLoading] = useState(false);
+export function useDashboardState(initial: DashboardInitial | null): DashboardState {
+  const [focusIso, setFocusIso] = useState(() => {
+    if (initial?.at) return initial.at;
+    const d = new Date();
+    d.setUTCMinutes(0, 0, 0);
+    return d.toISOString();
+  });
+  const [snapshot, setSnapshot] = useState<Snapshot | null>(
+    initial ? { mix: initial.mix, facts: initial.facts } : null,
+  );
+  const [story, setStory] = useState<string | null>(initial?.story || null);
+  const [mixLoading, setMixLoading] = useState(!initial);
+  const [storyLoading, setStoryLoading] = useState(!initial);
 
   const snapshotCacheRef = useRef(
-    new Map<string, Snapshot>([[initial.at, { mix: initial.mix, facts: initial.facts }]]),
+    new Map<string, Snapshot>(
+      initial ? [[initial.at, { mix: initial.mix, facts: initial.facts }]] : [],
+    ),
   );
   const storyCacheRef = useRef(
-    new Map<string, string>(initial.story ? [[initial.at, initial.story]] : []),
+    new Map<string, string>(initial?.story ? [[initial.at, initial.story]] : []),
   );
   const mixAbortRef = useRef<AbortController | null>(null);
   const storyAbortRef = useRef<AbortController | null>(null);
-  const currentRequestRef = useRef<string>(initial.at);
+  const currentRequestRef = useRef<string>(focusIso);
 
   const select = useCallback((iso: string) => {
     setFocusIso(iso);
@@ -60,7 +70,7 @@ export function useDashboardState(initial: DashboardInitial): DashboardState {
       mixAbortRef.current?.abort();
       const ctrl = new AbortController();
       mixAbortRef.current = ctrl;
-      fetch(`/api/mix?at=${encodeURIComponent(focusIso)}`, { signal: ctrl.signal })
+      fetch(apiUrl(`/api/mix?at=${encodeURIComponent(focusIso)}`), { signal: ctrl.signal })
         .then((r) => r.json())
         .then((data: { mix: MixResult; facts: Facts; error?: string }) => {
           if (currentRequestRef.current !== focusIso) return;
@@ -87,7 +97,7 @@ export function useDashboardState(initial: DashboardInitial): DashboardState {
 
       (async () => {
         try {
-          const res = await fetch(`/api/story?at=${encodeURIComponent(focusIso)}`, {
+          const res = await fetch(apiUrl(`/api/story?at=${encodeURIComponent(focusIso)}`), {
             signal: ctrl.signal,
           });
           if (!res.body) {

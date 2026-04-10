@@ -41,6 +41,7 @@ export function Timeline({
     hoursBack: HOURS_BACK,
     hoursForward: HOURS_FORWARD,
     windowOffsetHours: windowOffset,
+    maxHoursForward: HOURS_FORWARD,
   });
 
   const timelineIndex = useMemo(() => {
@@ -106,6 +107,7 @@ export function Timeline({
   const canPanBack =
     focusMs - (PAN_STEP + HOURS_BACK) * 3600000 >= timelineBounds.earliest;
   const canPanForward =
+    windowOffset + PAN_STEP <= 0 &&
     focusMs + (PAN_STEP + HOURS_FORWARD) * 3600000 <= timelineBounds.latest;
 
   const panBack = () => canPanBack && onPan(-PAN_STEP);

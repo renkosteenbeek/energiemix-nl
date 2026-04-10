@@ -1,3 +1,4 @@
+import { isNativeBuild } from "@/lib/api";
 import { Dashboard } from "@/components/Dashboard";
 import { computeFacts, prefetchBaselines } from "@/lib/insights";
 import {
@@ -9,9 +10,14 @@ import {
 import { theme } from "@/lib/theme";
 import type { DashboardInitial } from "@/lib/useDashboardState";
 
-export const dynamic = "force-dynamic";
-
 export default async function Page() {
+  if (isNativeBuild) {
+    return <Dashboard initial={null} timeline={[]} />;
+  }
+
+  const { unstable_noStore: noStore } = await import("next/cache");
+  noStore();
+
   const at = latestAvailableHour();
   let initial: DashboardInitial | null = null;
   let timeline: TimePoint[] = [];
@@ -20,7 +26,7 @@ export default async function Page() {
   try {
     const [mix, rawTimeline] = await Promise.all([
       getMixAt(at),
-      getGreenTimeline(new Date(), 720, 120),
+      getGreenTimeline(new Date(), 720, 24),
       prefetchBaselines(at.getUTCHours()),
     ]);
     timeline = rawTimeline;

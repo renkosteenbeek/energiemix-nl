@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
 import { computeFacts } from "@/lib/insights";
 import { clampAt, getMixAt, latestAvailableHour } from "@/lib/ned";
+import { cacheControl, getCached, setCache, withCors } from "@/lib/responseCache";
 
-export const dynamic = "force-dynamic";
+export async function OPTIONS() {
+  return new Response(null, { status: 204, headers: withCors({}) });
+}
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -13,10 +16,29 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "ongeldige datum" }, { status: 400 });
   }
 
+  const hourKey = at.toISOString().slice(0, 13);
+  const cacheKey = `mix:${hourKey}`;
+
+  const cached = getCached<{ at: string; mix: unknown; facts: unknown }>(cacheKey);
+  if (cached) {
+    return NextResponse.json(cached, {
+      headers: withCors({ "Cache-Control": cacheControl(at) }),
+    });
+  }
+
   try {
     const mix = await getMixAt(at);
     const facts = await computeFacts(at, mix);
-    return NextResponse.json({ at: at.toISOString(), mix, facts });
+    const body = { at: at.toISOString(), mix, facts };
+
+    const now = Date.now();
+    const hourAgo = now - 60 * 60 * 1000;
+    const ttl = at.getTime() < hourAgo ? 3600_000 : 300_000;
+    setCache(cacheKey, body, ttl);
+
+    return NextResponse.json(body, {
+      headers: withCors({ "Cache-Control": cacheControl(at) }),
+    });
   } catch (e) {
     return NextResponse.json(
       { error: e instanceof Error ? e.message : "fout" },

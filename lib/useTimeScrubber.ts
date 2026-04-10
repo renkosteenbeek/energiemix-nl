@@ -1,5 +1,6 @@
 "use client";
 
+import { Haptics, ImpactStyle } from "@capacitor/haptics";
 import { useCallback, useMemo, useRef, useState, type RefObject } from "react";
 
 export type HourCell = {
@@ -35,8 +36,9 @@ export function useTimeScrubber(options: {
   hoursBack: number;
   hoursForward: number;
   windowOffsetHours?: number;
+  maxHoursForward?: number;
 }): TimeScrubber {
-  const { focusIso, onSelect, hoursBack, hoursForward, windowOffsetHours = 0 } = options;
+  const { focusIso, onSelect, hoursBack, hoursForward, windowOffsetHours = 0, maxHoursForward } = options;
   const trackRef = useRef<HTMLDivElement | null>(null);
   const draggingRef = useRef(false);
   const dragIsoRef = useRef<string | null>(null);
@@ -49,7 +51,8 @@ export function useTimeScrubber(options: {
   }, []);
 
   const windowStart = -hoursBack + windowOffsetHours;
-  const windowEnd = hoursForward + windowOffsetHours;
+  const rawWindowEnd = hoursForward + windowOffsetHours;
+  const windowEnd = maxHoursForward != null ? Math.min(rawWindowEnd, maxHoursForward) : rawWindowEnd;
   const total = windowEnd - windowStart + 1;
 
   const cells = useMemo<HourCell[]>(() => {
@@ -119,7 +122,10 @@ export function useTimeScrubber(options: {
         (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
       } catch {}
       const cell = pickCellFromX(e.clientX);
-      if (cell) setPreview(cell.iso);
+      if (cell) {
+        setPreview(cell.iso);
+        Haptics.impact({ style: ImpactStyle.Medium }).catch(() => {});
+      }
     },
     [pickCellFromX, setPreview],
   );
@@ -130,6 +136,7 @@ export function useTimeScrubber(options: {
       const cell = pickCellFromX(e.clientX);
       if (cell && cell.iso !== dragIsoRef.current) {
         setPreview(cell.iso);
+        Haptics.impact({ style: ImpactStyle.Light }).catch(() => {});
       }
     },
     [pickCellFromX, setPreview],
