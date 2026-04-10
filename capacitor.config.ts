@@ -4,11 +4,6 @@ const config: CapacitorConfig = {
   appId: "nl.gentleinnovations.energiemix",
   appName: "Energiemix NL",
   webDir: "out",
-  ios: {
-    scrollEnabled: true,
-    allowsLinkPreview: false,
-    contentInset: "always",
-  },
   server: {
     allowNavigation: ["energiemix.gentle-innovations.nl"],
   },

@@ -305,7 +305,7 @@ export async function getGreenTimeline(
     const bucket = mergedBuckets.get(time)!;
     if (bucket.total <= 0) continue;
     const tMs = new Date(time).getTime();
-    const isForecast = tMs >= nowHourStartMs;
+    const isForecast = tMs > nowHourStartMs;
     series.push({
       time,
       greenPct: (bucket.green / bucket.total) * 100,
