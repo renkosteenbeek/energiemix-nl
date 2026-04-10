@@ -287,7 +287,10 @@ export async function getGreenTimeline(
   const mergedBuckets = new Map<string, Bucket>();
   for (const buckets of results) {
     for (const [time, bucket] of buckets) {
-      if (!mergedBuckets.has(time)) mergedBuckets.set(time, bucket);
+      const existing = mergedBuckets.get(time);
+      if (!existing || bucket.total > existing.total) {
+        mergedBuckets.set(time, bucket);
+      }
     }
   }
 
