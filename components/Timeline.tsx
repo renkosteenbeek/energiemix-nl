@@ -358,8 +358,8 @@ function ConsumptionLine({ bars }: { bars: Bar[] }) {
         points={points}
         fill="none"
         stroke={theme.ink}
-        strokeWidth="0.4"
-        strokeOpacity="0.22"
+        strokeWidth="0.8"
+        strokeOpacity="0.45"
         strokeLinejoin="round"
         vectorEffect="non-scaling-stroke"
       />
