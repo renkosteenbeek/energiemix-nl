@@ -340,7 +340,7 @@ function ConsumptionLine({ bars }: { bars: Bar[] }) {
 
   const points = bars
     .map((bar, i) => {
-      if (bar.totalKWh == null || bar.totalKWh <= 0) return null;
+      if (bar.totalKWh == null || bar.totalKWh <= 0 || bar.isNow) return null;
       const x = (i / (bars.length - 1)) * 100;
       const y = (1 - bar.totalKWh / maxKWh) * h;
       return `${x},${y}`;
