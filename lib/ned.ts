@@ -119,7 +119,6 @@ export type TimePoint = {
   forecast?: boolean;
 };
 
-const CRITICAL_FOSSIL_IDS = new Set<number>([18, 19]);
 
 export type MixResult = {
   focusTime: string;
@@ -304,15 +303,6 @@ export async function getGreenTimeline(
     if (bucket.total <= 0) continue;
     const tMs = new Date(time).getTime();
     const isForecast = tMs >= nowHourStartMs;
-    const isStrictFuture = tMs > nowHourStartMs;
-
-    if (isStrictFuture) {
-      const hasCritical = [...CRITICAL_FOSSIL_IDS].every(
-        (id) => (bucket.bySource.get(id) ?? 0) > 0,
-      );
-      if (!hasCritical) break;
-    }
-
     series.push({
       time,
       greenPct: (bucket.green / bucket.total) * 100,

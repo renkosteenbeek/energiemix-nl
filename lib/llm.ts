@@ -1,6 +1,8 @@
 import OpenAI from "openai";
 import type { Facts } from "./insights";
 
+const MODEL = "gpt-5.4-nano";
+
 const fullCache = new Map<string, string>();
 const inflightCache = new Map<string, Promise<string>>();
 
@@ -75,7 +77,7 @@ export async function describe(facts: Facts): Promise<string> {
 
     try {
       const client = new OpenAI({ apiKey });
-      const model = process.env.OPENAI_MODEL ?? "gpt-5-nano";
+      const model = MODEL;
       const completion = await client.chat.completions.create({
         model,
         messages: buildMessages(facts),
