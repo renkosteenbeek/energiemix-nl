@@ -1,6 +1,5 @@
 import { Dashboard } from "@/components/Dashboard";
-import { computeFacts } from "@/lib/insights";
-import { describe } from "@/lib/llm";
+import { computeFacts, prefetchBaselines } from "@/lib/insights";
 import {
   getGreenTimeline,
   getMixAt,
@@ -22,19 +21,11 @@ export default async function Page() {
     const [mix, rawTimeline] = await Promise.all([
       getMixAt(at),
       getGreenTimeline(new Date(), 720, 120),
+      prefetchBaselines(at.getUTCHours()),
     ]);
     timeline = rawTimeline;
     const facts = await computeFacts(at, mix);
-    let story = "";
-    try {
-      story = await Promise.race([
-        describe(facts),
-        new Promise<string>((resolve) => setTimeout(() => resolve(""), 1500)),
-      ]);
-    } catch {
-      story = "";
-    }
-    initial = { at: at.toISOString(), mix, facts, story };
+    initial = { at: at.toISOString(), mix, facts, story: "" };
   } catch (e) {
     error = e instanceof Error ? e.message : "Onbekende fout";
   }

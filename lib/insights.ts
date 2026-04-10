@@ -32,6 +32,10 @@ function isDaylightInNL(at: Date): boolean {
 
 const COMPARABLE_SOURCES = [1, 2, 17, 18, 19];
 
+export function prefetchBaselines(hourOfDay: number): Promise<unknown[]> {
+  return Promise.all(COMPARABLE_SOURCES.map((typeId) => getBaseline(typeId, hourOfDay)));
+}
+
 export async function computeFacts(at: Date, prefetchedMix?: MixResult): Promise<Facts> {
   const mix = prefetchedMix ?? (await getMixAt(at));
   const focusDate = new Date(mix.focusTime || at.toISOString());
