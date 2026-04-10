@@ -12,9 +12,15 @@ const PAN_STEP = 24;
 
 type Bar = HourCell & {
   greenPct: number | null;
+  totalKWh: number | null;
   isForecast: boolean;
   hasData: boolean;
 };
+
+function formatGWh(kWh: number): string {
+  const gwh = kWh / 1_000_000;
+  return gwh >= 10 ? `${Math.round(gwh)} GWh` : `${gwh.toFixed(1)} GWh`;
+}
 
 export function Timeline({
   timeline,
@@ -38,10 +44,14 @@ export function Timeline({
   });
 
   const timelineIndex = useMemo(() => {
-    const byHour = new Map<number, { greenPct: number; forecast: boolean }>();
+    const byHour = new Map<
+      number,
+      { greenPct: number; totalKWh: number; forecast: boolean }
+    >();
     for (const p of timeline) {
       byHour.set(new Date(p.time).getTime(), {
         greenPct: p.greenPct,
+        totalKWh: p.totalKWh,
         forecast: p.forecast ?? false,
       });
     }
@@ -66,6 +76,7 @@ export function Timeline({
       return {
         ...cell,
         greenPct: entry?.greenPct ?? null,
+        totalKWh: entry?.totalKWh ?? null,
         isForecast: entry?.forecast ?? cell.hoursFromNow > 0,
         hasData: entry != null,
       };
@@ -84,6 +95,7 @@ export function Timeline({
   const previewLabel = previewBar ? compactDateLabel(previewBar.iso) : "";
   const previewGreen =
     previewBar?.greenPct != null ? Math.round(previewBar.greenPct) : null;
+  const previewTotalKWh = previewBar?.totalKWh ?? null;
 
   const focusMs = useMemo(() => {
     const d = new Date(focusIso);
@@ -127,6 +139,14 @@ export function Timeline({
                   style={{ color: colorForGreenPct(previewGreen) }}
                 >
                   {previewGreen}%
+                </span>
+              </>
+            )}
+            {previewTotalKWh != null && previewTotalKWh > 0 && (
+              <>
+                <span style={{ color: theme.dim2 }}> · </span>
+                <span className="tabular-nums" style={{ color: theme.dim }}>
+                  {formatGWh(previewTotalKWh)}
                 </span>
               </>
             )}
@@ -178,6 +198,7 @@ export function Timeline({
           {bars.map((bar) => (
             <BarColumn key={bar.iso} bar={bar} />
           ))}
+          <ConsumptionLine bars={bars} />
         </div>
 
         {nowPct != null && (
@@ -307,5 +328,41 @@ function PanButton({
     >
       {direction === "back" ? "«" : "»"}
     </button>
+  );
+}
+
+function ConsumptionLine({ bars }: { bars: Bar[] }) {
+  const h = 96;
+  const dataPoints = bars.filter((b) => b.totalKWh != null && b.totalKWh > 0);
+  if (dataPoints.length < 2) return null;
+  const maxKWh = Math.max(...dataPoints.map((b) => b.totalKWh!));
+  if (maxKWh <= 0) return null;
+
+  const points = bars
+    .map((bar, i) => {
+      if (bar.totalKWh == null || bar.totalKWh <= 0) return null;
+      const x = (i / (bars.length - 1)) * 100;
+      const y = (1 - bar.totalKWh / maxKWh) * h;
+      return `${x},${y}`;
+    })
+    .filter(Boolean)
+    .join(" ");
+
+  return (
+    <svg
+      viewBox={`0 0 100 ${h}`}
+      preserveAspectRatio="none"
+      className="absolute inset-0 w-full h-full pointer-events-none"
+    >
+      <polyline
+        points={points}
+        fill="none"
+        stroke={theme.ink}
+        strokeWidth="0.4"
+        strokeOpacity="0.22"
+        strokeLinejoin="round"
+        vectorEffect="non-scaling-stroke"
+      />
+    </svg>
   );
 }

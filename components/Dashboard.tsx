@@ -58,6 +58,7 @@ export function Dashboard({
           <Hero
             greenPct={snapshot.mix.greenPct}
             validfrom={snapshot.mix.focusTime}
+            totalKWh={snapshot.mix.totalKWh}
           />
         </div>
 
@@ -133,7 +134,20 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
-function Hero({ greenPct, validfrom }: { greenPct: number; validfrom: string }) {
+function formatGWh(kWh: number): string {
+  const gwh = kWh / 1_000_000;
+  return gwh >= 10 ? `${Math.round(gwh)} GWh` : `${gwh.toFixed(1)} GWh`;
+}
+
+function Hero({
+  greenPct,
+  validfrom,
+  totalKWh,
+}: {
+  greenPct: number;
+  validfrom: string;
+  totalKWh: number;
+}) {
   const top = colorForGreenPct(greenPct);
   const bottom = colorForGreenPctSoft(greenPct);
   const rounded = Math.round(greenPct);
@@ -171,6 +185,11 @@ function Hero({ greenPct, validfrom }: { greenPct: number; validfrom: string }) 
           duurzaam{" "}
           <span className="text-white/60">· {temporalLabel(validfrom)}</span>
         </div>
+        {totalKWh > 0 && (
+          <div className="mt-2 text-[14px] text-white/45 tabular-nums font-light tracking-tight">
+            {formatGWh(totalKWh)} verbruik
+          </div>
+        )}
       </div>
     </section>
   );
