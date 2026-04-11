@@ -67,7 +67,8 @@ body {
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
 }
-.flip-inner.flipped .flip-face { visibility: hidden; }
+.flip-inner.flipped .flip-face { visibility: hidden; transition: visibility 0s 0.3s; }
+.flip-inner:not(.flipped) .flip-face { visibility: visible; transition: visibility 0s 0s; }
 .flip-back {
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
