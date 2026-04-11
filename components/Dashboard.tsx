@@ -101,7 +101,7 @@ export function Dashboard({
               <TopSourcePills sources={snapshot.mix.sources} />
             </section>
 
-            <section style={{ borderTop: `1px solid ${theme.rule}`, borderBottom: `1px solid ${theme.rule}` }} className="mb-20">
+            <section style={{ borderTop: `1px solid ${theme.rule}`, borderBottom: `1px solid ${theme.rule}` }} className="mb-10">
               <AllSources sources={snapshot.mix.sources} />
             </section>
           </>
