@@ -1,22 +1,122 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="17132" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" launchScreen="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="01J-lp-oVM">
-    <device id="retina4_7" orientation="portrait" appearance="light"/>
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="22505" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" launchScreen="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="01J-lp-oVM">
+    <device id="retina6_12" orientation="portrait" appearance="light"/>
     <dependencies>
         <deployment identifier="iOS"/>
-        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="17105"/>
-        <capability name="System colors in document resources" minToolsVersion="11.0"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="22504"/>
+        <capability name="Named colors" minToolsVersion="9.0"/>
+        <capability name="Safe area layout guides" minToolsVersion="9.0"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <scenes>
-        <!--View Controller-->
         <scene sceneID="EHf-IW-A2E">
             <objects>
                 <viewController id="01J-lp-oVM" sceneMemberID="viewController">
-                    <imageView key="view" userInteractionEnabled="NO" contentMode="scaleAspectFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="Splash" id="snD-IY-ifK">
-                        <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
-                        <autoresizingMask key="autoresizingMask"/>
-                        <color key="backgroundColor" systemColor="systemBackgroundColor"/>
-                    </imageView>
+                    <view key="view" contentMode="scaleToFill" id="root-view">
+                        <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <subviews>
+                            <!-- Centered container with max-width -->
+                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="container">
+                                <subviews>
+                                    <!-- Hero skeleton -->
+                                    <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="hero">
+                                        <color key="backgroundColor" name="SkeletonFill"/>
+                                        <constraints>
+                                            <constraint firstAttribute="height" constant="220" id="hero-h"/>
+                                        </constraints>
+                                    </view>
+                                    <!-- Timeline label skeleton -->
+                                    <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="tl-label">
+                                        <color key="backgroundColor" name="SkeletonFill"/>
+                                        <constraints>
+                                            <constraint firstAttribute="height" constant="10" id="tl-label-h"/>
+                                            <constraint firstAttribute="width" constant="64" id="tl-label-w"/>
+                                        </constraints>
+                                    </view>
+                                    <!-- Timeline bars skeleton -->
+                                    <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="tl-bars">
+                                        <color key="backgroundColor" name="SkeletonFill"/>
+                                        <constraints>
+                                            <constraint firstAttribute="height" constant="96" id="tl-bars-h"/>
+                                        </constraints>
+                                    </view>
+                                    <!-- Duiding label skeleton -->
+                                    <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="du-label">
+                                        <color key="backgroundColor" name="SkeletonFill"/>
+                                        <constraints>
+                                            <constraint firstAttribute="height" constant="10" id="du-label-h"/>
+                                            <constraint firstAttribute="width" constant="56" id="du-label-w"/>
+                                        </constraints>
+                                    </view>
+                                    <!-- Text line skeletons -->
+                                    <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="line1">
+                                        <color key="backgroundColor" name="SkeletonFill"/>
+                                        <constraints>
+                                            <constraint firstAttribute="height" constant="12" id="line1-h"/>
+                                        </constraints>
+                                    </view>
+                                    <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="line2">
+                                        <color key="backgroundColor" name="SkeletonFill"/>
+                                        <constraints>
+                                            <constraint firstAttribute="height" constant="12" id="line2-h"/>
+                                        </constraints>
+                                    </view>
+                                    <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="line3">
+                                        <color key="backgroundColor" name="SkeletonFill"/>
+                                        <constraints>
+                                            <constraint firstAttribute="height" constant="12" id="line3-h"/>
+                                        </constraints>
+                                    </view>
+                                </subviews>
+                                <color key="backgroundColor" white="0.0" alpha="0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                <constraints>
+                                    <!-- Hero: top of container with padding -->
+                                    <constraint firstItem="hero" firstAttribute="top" secondItem="container" secondAttribute="top" constant="24" id="c-hero-top"/>
+                                    <constraint firstItem="hero" firstAttribute="leading" secondItem="container" secondAttribute="leading" id="c-hero-lead"/>
+                                    <constraint firstItem="hero" firstAttribute="trailing" secondItem="container" secondAttribute="trailing" id="c-hero-trail"/>
+
+                                    <!-- Timeline label: below hero -->
+                                    <constraint firstItem="tl-label" firstAttribute="top" secondItem="hero" secondAttribute="bottom" constant="32" id="c-tll-top"/>
+                                    <constraint firstItem="tl-label" firstAttribute="leading" secondItem="container" secondAttribute="leading" id="c-tll-lead"/>
+
+                                    <!-- Timeline bars: below tl-label 24, full width -->
+                                    <constraint firstItem="tl-bars" firstAttribute="top" secondItem="tl-label" secondAttribute="bottom" constant="24" id="c-tlb-top"/>
+                                    <constraint firstItem="tl-bars" firstAttribute="leading" secondItem="container" secondAttribute="leading" id="c-tlb-lead"/>
+                                    <constraint firstItem="tl-bars" firstAttribute="trailing" secondItem="container" secondAttribute="trailing" id="c-tlb-trail"/>
+
+                                    <!-- Duiding label: below bars -->
+                                    <constraint firstItem="du-label" firstAttribute="top" secondItem="tl-bars" secondAttribute="bottom" constant="32" id="c-dul-top"/>
+                                    <constraint firstItem="du-label" firstAttribute="leading" secondItem="container" secondAttribute="leading" id="c-dul-lead"/>
+
+                                    <!-- Line1: below du-label 20, 88% width -->
+                                    <constraint firstItem="line1" firstAttribute="top" secondItem="du-label" secondAttribute="bottom" constant="20" id="c-l1-top"/>
+                                    <constraint firstItem="line1" firstAttribute="leading" secondItem="container" secondAttribute="leading" id="c-l1-lead"/>
+                                    <constraint firstItem="line1" firstAttribute="width" secondItem="container" secondAttribute="width" multiplier="0.88" id="c-l1-w"/>
+
+                                    <!-- Line2: below line1 10, 72% width -->
+                                    <constraint firstItem="line2" firstAttribute="top" secondItem="line1" secondAttribute="bottom" constant="10" id="c-l2-top"/>
+                                    <constraint firstItem="line2" firstAttribute="leading" secondItem="container" secondAttribute="leading" id="c-l2-lead"/>
+                                    <constraint firstItem="line2" firstAttribute="width" secondItem="container" secondAttribute="width" multiplier="0.72" id="c-l2-w"/>
+
+                                    <!-- Line3: below line2 10, 56% width -->
+                                    <constraint firstItem="line3" firstAttribute="top" secondItem="line2" secondAttribute="bottom" constant="10" id="c-l3-top"/>
+                                    <constraint firstItem="line3" firstAttribute="leading" secondItem="container" secondAttribute="leading" id="c-l3-lead"/>
+                                    <constraint firstItem="line3" firstAttribute="width" secondItem="container" secondAttribute="width" multiplier="0.56" id="c-l3-w"/>
+                                </constraints>
+                            </view>
+                        </subviews>
+                        <viewLayoutGuide key="safeArea" id="safe-area"/>
+                        <color key="backgroundColor" name="SkeletonBg"/>
+                        <constraints>
+                            <!-- Container: centered, 20pt padding, max 640pt -->
+                            <constraint firstItem="container" firstAttribute="top" secondItem="safe-area" secondAttribute="top" id="c-top"/>
+                            <constraint firstItem="container" firstAttribute="leading" secondItem="root-view" secondAttribute="leading" constant="20" id="c-lead"/>
+                            <constraint firstAttribute="trailing" secondItem="container" secondAttribute="trailing" constant="20" id="c-trail"/>
+                            <constraint firstItem="container" firstAttribute="width" relation="lessThanOrEqual" constant="640" id="c-maxw"/>
+                            <constraint firstItem="container" firstAttribute="centerX" secondItem="root-view" secondAttribute="centerX" id="c-cx"/>
+                        </constraints>
+                    </view>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="iYj-Kq-Ea1" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>
@@ -24,9 +124,7 @@
         </scene>
     </scenes>
     <resources>
-        <image name="Splash" width="1366" height="1366"/>
-        <systemColor name="systemBackgroundColor">
-            <color white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
-        </systemColor>
+        <namedColor name="SkeletonBg"/>
+        <namedColor name="SkeletonFill"/>
     </resources>
 </document>

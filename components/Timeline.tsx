@@ -28,12 +28,16 @@ export function Timeline({
   onSelect,
   windowOffset,
   onPan,
+  isAtNow,
+  onJumpToNow,
 }: {
   timeline: TimePoint[];
   focusIso: string;
   onSelect: (iso: string) => void;
   windowOffset: number;
   onPan: (deltaHours: number) => void;
+  isAtNow: boolean;
+  onJumpToNow: () => void;
 }) {
   const { cells, indicatorPct, nowPct, bindings, previewIso } = useTimeScrubber({
     focusIso,
@@ -163,6 +167,21 @@ export function Timeline({
           </div>
         </div>
         <div className="flex gap-1 flex-shrink-0 ml-3">
+          <button
+            type="button"
+            onClick={onJumpToNow}
+            className="w-8 h-8 rounded-full flex items-center justify-center text-[9px] uppercase tracking-[0.14em] transition-opacity duration-300"
+            style={{
+              color: theme.ink,
+              border: `1px solid ${theme.rule}`,
+              opacity: isAtNow ? 0 : 1,
+              pointerEvents: isAtNow ? "none" : "auto",
+              cursor: "pointer",
+            }}
+            aria-label="terug naar nu"
+          >
+            nu
+          </button>
           <PanButton direction="back" enabled={canPanBack} onClick={panBack} />
           <PanButton direction="forward" enabled={canPanForward} onClick={panForward} />
         </div>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#FAFAF7</color>
+    <color name="colorPrimaryDark">#FAFAF7</color>
+    <color name="colorAccent">#0B0B0A</color>
+    <color name="skeleton_bg">#FAFAF7</color>
+    <color name="skeleton_fill">#EFEBE0</color>
+    <color name="skeleton_rule">#E6E2D8</color>
+</resources>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState, useMemo } from "react";
 import {
   colorForGreenPct,
   colorForGreenPctSoft,
@@ -10,8 +10,6 @@ import {
 import { apiUrl, isNativeBuild } from "@/lib/api";
 import { theme } from "@/lib/theme";
 import {
-  amsterdamAt,
-  JUMPS,
   longDateLabel,
   nowHourIso,
   temporalLabel,
@@ -31,6 +29,8 @@ export function Dashboard({
     useDashboardState(initial);
   const [timelineData, setTimelineData] = useState<TimePoint[]>(timeline);
   const [windowOffset, setWindowOffset] = useState(0);
+  const nowIso = useMemo(() => nowHourIso(), []);
+  const isAtNow = focusIso === nowIso;
 
   useEffect(() => {
     if (timelineData.length > 0) return;
@@ -42,13 +42,10 @@ export function Dashboard({
       .catch(() => {});
   }, []);
 
-  const selectAndResetWindow = useCallback(
-    (iso: string) => {
-      setWindowOffset(0);
-      select(iso);
-    },
-    [select],
-  );
+  const jumpToNow = useCallback(() => {
+    setWindowOffset(0);
+    select(nowIso);
+  }, [select, nowIso]);
 
   const panByHours = useCallback(
     (hours: number) => {
@@ -82,23 +79,24 @@ export function Dashboard({
               />
             </div>
 
-            <section className="pt-8 pb-10" style={{ borderTop: `1px solid ${theme.rule}` }}>
+            <section className="pt-8 pb-10">
               <Timeline
                 timeline={timelineData}
                 focusIso={focusIso}
                 onSelect={select}
                 windowOffset={windowOffset}
                 onPan={panByHours}
+                isAtNow={isAtNow}
+                onJumpToNow={jumpToNow}
               />
-              <QuickJumps focusIso={focusIso} onSelect={selectAndResetWindow} />
             </section>
 
-            <section className="py-10" style={{ borderTop: `1px solid ${theme.rule}` }}>
+            <section className="py-10">
               <SectionLabel>Duiding</SectionLabel>
               <Duiding story={story} loading={storyLoading} />
             </section>
 
-            <section className="py-10" style={{ borderTop: `1px solid ${theme.rule}` }}>
+            <section className="py-10">
               <SectionLabel>Grootste bronnen</SectionLabel>
               <TopSourcePills sources={snapshot.mix.sources} />
             </section>
@@ -290,59 +288,3 @@ function TopSourcePills({ sources }: { sources: SourceSlice[] }) {
   );
 }
 
-function QuickJumps({
-  focusIso,
-  onSelect,
-}: {
-  focusIso: string;
-  onSelect: (iso: string) => void;
-}) {
-  const referenceNowIso = useMemo(() => nowHourIso(), []);
-  const isNow = focusIso === referenceNowIso;
-
-  return (
-    <div className="mt-10 flex flex-wrap gap-2">
-      <JumpButton active={isNow} onClick={() => onSelect(referenceNowIso)}>
-        Nu
-      </JumpButton>
-      {JUMPS.map((j) => {
-        const iso = amsterdamAt(j.hour, j.offsetDays);
-        return (
-          <JumpButton
-            key={j.label}
-            active={iso === focusIso}
-            onClick={() => onSelect(iso)}
-          >
-            {j.label}
-          </JumpButton>
-        );
-      })}
-    </div>
-  );
-}
-
-function JumpButton({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="px-4 py-2 rounded-full text-[13px] cursor-pointer transition-colors"
-      style={{
-        background: active ? theme.ink : theme.bg,
-        color: active ? theme.bg : theme.ink,
-        border: `1px solid ${active ? theme.ink : theme.rule}`,
-        fontWeight: active ? 500 : 400,
-      }}
-    >
-      {children}
-    </button>
-  );
-}

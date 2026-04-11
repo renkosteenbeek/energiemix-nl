@@ -1,31 +1,5 @@
 const AMS_TZ = "Europe/Amsterdam";
 
-export type Jump = { label: string; offsetDays: number; hour: number };
-
-export const JUMPS: Jump[] = [
-  { label: "Gisteren", offsetDays: -1, hour: 12 },
-  { label: "Vannacht", offsetDays: 0, hour: 3 },
-  { label: "Ochtend", offsetDays: 0, hour: 9 },
-  { label: "Middag", offsetDays: 0, hour: 14 },
-  { label: "Avond", offsetDays: 0, hour: 20 },
-  { label: "Morgen", offsetDays: 1, hour: 12 },
-];
-
-export function amsterdamHour(d: Date): number {
-  return parseInt(
-    d.toLocaleString("en-US", { hour: "2-digit", hour12: false, timeZone: AMS_TZ }),
-    10,
-  ) % 24;
-}
-
-export function amsterdamAt(hour: number, offsetDays: number): string {
-  const now = new Date();
-  const t = new Date(now);
-  t.setUTCHours(t.getUTCHours() + (hour - amsterdamHour(now)) + offsetDays * 24);
-  t.setUTCMinutes(0, 0, 0);
-  return t.toISOString();
-}
-
 export function nowHourIso(): string {
   const t = new Date();
   t.setUTCMinutes(0, 0, 0);

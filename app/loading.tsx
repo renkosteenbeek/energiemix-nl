@@ -1,7 +1,6 @@
 import { theme } from "@/lib/theme";
 
 const SKEL = theme.rule2;
-const SKEL2 = theme.rule;
 
 export default function Loading() {
   return (
@@ -33,10 +32,7 @@ export default function Loading() {
           />
         </div>
 
-        <section
-          className="pt-8 pb-10"
-          style={{ borderTop: `1px solid ${theme.rule}` }}
-        >
+        <section className="pt-8 pb-10">
           <div
             className="h-2.5 w-16 rounded-full animate-pulse mb-6"
             style={{ background: SKEL }}
@@ -54,23 +50,9 @@ export default function Loading() {
               />
             ))}
           </div>
-          <div className="flex gap-2">
-            {["Nu", "Gisteren", "Ochtend", "Middag", "Avond", "Morgen"].map(
-              (l) => (
-                <div
-                  key={l}
-                  className="h-9 px-4 rounded-full animate-pulse"
-                  style={{ background: SKEL2, minWidth: 56 }}
-                />
-              ),
-            )}
-          </div>
         </section>
 
-        <section
-          className="py-10"
-          style={{ borderTop: `1px solid ${theme.rule}` }}
-        >
+        <section className="py-10">
           <div
             className="h-2.5 w-14 rounded-full animate-pulse mb-5"
             style={{ background: SKEL }}
@@ -91,10 +73,7 @@ export default function Loading() {
           </div>
         </section>
 
-        <section
-          className="py-10"
-          style={{ borderTop: `1px solid ${theme.rule}` }}
-        >
+        <section className="py-10">
           <div
             className="h-2.5 w-28 rounded-full animate-pulse mb-5"
             style={{ background: SKEL }}
