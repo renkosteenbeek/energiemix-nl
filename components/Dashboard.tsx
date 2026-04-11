@@ -64,7 +64,7 @@ export function Dashboard({
         className="max-w-[640px] mx-auto px-5 sm:px-6"
         style={{
           paddingTop: "env(safe-area-inset-top)",
-          paddingBottom: "env(safe-area-inset-bottom)",
+          paddingBottom: "calc(4rem + env(safe-area-inset-bottom, 0px))",
         }}
       >
         {!isNativeBuild && <Header mixLoading={mixLoading} />}
@@ -101,7 +101,7 @@ export function Dashboard({
               <TopSourcePills sources={snapshot.mix.sources} />
             </section>
 
-            <section style={{ borderTop: `1px solid ${theme.rule}`, borderBottom: `1px solid ${theme.rule}` }} className="mb-10">
+            <section style={{ borderTop: `1px solid ${theme.rule}`, borderBottom: `1px solid ${theme.rule}` }}>
               <AllSources sources={snapshot.mix.sources} />
             </section>
           </>
