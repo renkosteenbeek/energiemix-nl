@@ -54,3 +54,26 @@ body {
     font-feature-settings: "ss01", "cv11", "tnum";
   }
 }
+
+.flip-card { perspective: 1200px; }
+.flip-inner {
+  position: relative;
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+              min-height 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-style: preserve-3d;
+}
+.flip-inner.flipped { transform: rotateY(180deg); }
+.flip-face {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.flip-inner.flipped .flip-face { visibility: hidden; }
+.flip-back {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform: rotateY(180deg);
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+}

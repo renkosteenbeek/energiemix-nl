@@ -24,6 +24,7 @@ export type DashboardState = {
   story: string | null;
   mixLoading: boolean;
   storyLoading: boolean;
+  refreshTrigger: number;
 };
 
 export function useDashboardState(initial: DashboardInitial | null): DashboardState {
@@ -54,6 +55,34 @@ export function useDashboardState(initial: DashboardInitial | null): DashboardSt
 
   const select = useCallback((iso: string) => {
     setFocusIso(iso);
+  }, []);
+
+  const refreshTriggerRef = useRef(0);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  useEffect(() => {
+    let hourWhenHidden = "";
+
+    const handleVisibility = () => {
+      if (document.visibilityState === "hidden") {
+        const d = new Date();
+        d.setMinutes(0, 0, 0);
+        hourWhenHidden = d.toISOString();
+      } else if (hourWhenHidden) {
+        const d = new Date();
+        d.setMinutes(0, 0, 0);
+        if (d.toISOString() !== hourWhenHidden) {
+          snapshotCacheRef.current.clear();
+          storyCacheRef.current.clear();
+          refreshTriggerRef.current += 1;
+          setRefreshTrigger(refreshTriggerRef.current);
+        }
+        hourWhenHidden = "";
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
   }, []);
 
   useEffect(() => {
@@ -128,7 +157,7 @@ export function useDashboardState(initial: DashboardInitial | null): DashboardSt
       mixAbortRef.current?.abort();
       storyAbortRef.current?.abort();
     };
-  }, [focusIso]);
+  }, [focusIso, refreshTrigger]);
 
-  return { focusIso, select, snapshot, story, mixLoading, storyLoading };
+  return { focusIso, select, snapshot, story, mixLoading, storyLoading, refreshTrigger };
 }
