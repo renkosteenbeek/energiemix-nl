@@ -17,7 +17,37 @@
 		50B271D11FEDC1A000F3C39B /* public in Resources */ = {isa = PBXBuildFile; fileRef = 50B271D01FEDC1A000F3C39B /* public */; };
 		A1B2C3D42DB1000000000001 /* BounceViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42DB1000000000002 /* BounceViewController.swift */; };
 		B1C2D3E42DB2000000000001 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C2D3E42DB2000000000002 /* SceneDelegate.swift */; };
+		E1B000012DB5000000000001 /* EnergiemixWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A000012DB5000000000001 /* EnergiemixWidgetBundle.swift */; };
+		E1B000012DB5000000000002 /* Provider.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A000012DB5000000000002 /* Provider.swift */; };
+		E1B000012DB5000000000003 /* WidgetViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A000012DB5000000000003 /* WidgetViews.swift */; };
+		E1B000012DB5000000000004 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A000012DB5000000000004 /* Models.swift */; };
+		E1B000012DB5000000000005 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E1A000012DB5000000000005 /* Assets.xcassets */; };
+		E1B000012DB5000000000006 /* EnergiemixWidgetExtension.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = E1A000012DB5000000000007 /* EnergiemixWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		E1A100012DB5000000000001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 504EC2FC1FED79650016851F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = E1E000012DB5000000000001;
+			remoteInfo = EnergiemixWidgetExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		E1D000012DB5000000000004 /* Embed App Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				E1B000012DB5000000000006 /* EnergiemixWidgetExtension.appex in Embed App Extensions */,
+			);
+			name = "Embed App Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		2FAD9762203C412B000D30F8 /* config.xml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = config.xml; sourceTree = "<group>"; };
@@ -32,6 +62,13 @@
 		958DCC722DB07C7200EA8C5F /* debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = debug.xcconfig; path = ../debug.xcconfig; sourceTree = SOURCE_ROOT; };
 		A1B2C3D42DB1000000000002 /* BounceViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BounceViewController.swift; sourceTree = "<group>"; };
 		B1C2D3E42DB2000000000002 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
+		E1A000012DB5000000000001 /* EnergiemixWidgetBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnergiemixWidgetBundle.swift; sourceTree = "<group>"; };
+		E1A000012DB5000000000002 /* Provider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Provider.swift; sourceTree = "<group>"; };
+		E1A000012DB5000000000003 /* WidgetViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetViews.swift; sourceTree = "<group>"; };
+		E1A000012DB5000000000004 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		E1A000012DB5000000000005 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		E1A000012DB5000000000006 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		E1A000012DB5000000000007 /* EnergiemixWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = EnergiemixWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -43,6 +80,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		E1D000012DB5000000000002 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -51,6 +95,7 @@
 			children = (
 				958DCC722DB07C7200EA8C5F /* debug.xcconfig */,
 				504EC3061FED79650016851F /* App */,
+				E1C000012DB5000000000001 /* EnergiemixWidget */,
 				504EC3051FED79650016851F /* Products */,
 			);
 			sourceTree = "<group>";
@@ -59,6 +104,7 @@
 			isa = PBXGroup;
 			children = (
 				504EC3041FED79650016851F /* App.app */,
+				E1A000012DB5000000000007 /* EnergiemixWidgetExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -80,6 +126,19 @@
 			path = App;
 			sourceTree = "<group>";
 		};
+		E1C000012DB5000000000001 /* EnergiemixWidget */ = {
+			isa = PBXGroup;
+			children = (
+				E1A000012DB5000000000001 /* EnergiemixWidgetBundle.swift */,
+				E1A000012DB5000000000002 /* Provider.swift */,
+				E1A000012DB5000000000003 /* WidgetViews.swift */,
+				E1A000012DB5000000000004 /* Models.swift */,
+				E1A000012DB5000000000005 /* Assets.xcassets */,
+				E1A000012DB5000000000006 /* Info.plist */,
+			);
+			path = EnergiemixWidget;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -90,10 +149,12 @@
 				504EC3001FED79650016851F /* Sources */,
 				504EC3011FED79650016851F /* Frameworks */,
 				504EC3021FED79650016851F /* Resources */,
+				E1D000012DB5000000000004 /* Embed App Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				E1A100012DB5000000000002 /* PBXTargetDependency */,
 			);
 			name = App;
 			packageProductDependencies = (
@@ -102,6 +163,23 @@
 			productName = App;
 			productReference = 504EC3041FED79650016851F /* App.app */;
 			productType = "com.apple.product-type.application";
+		};
+		E1E000012DB5000000000001 /* EnergiemixWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = E1F000012DB5000000000003 /* Build configuration list for PBXNativeTarget "EnergiemixWidgetExtension" */;
+			buildPhases = (
+				E1D000012DB5000000000001 /* Sources */,
+				E1D000012DB5000000000002 /* Frameworks */,
+				E1D000012DB5000000000003 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = EnergiemixWidgetExtension;
+			productName = EnergiemixWidgetExtension;
+			productReference = E1A000012DB5000000000007 /* EnergiemixWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -115,6 +193,10 @@
 					504EC3031FED79650016851F = {
 						CreatedOnToolsVersion = 9.2;
 						LastSwiftMigration = 1100;
+						ProvisioningStyle = Automatic;
+					};
+					E1E000012DB5000000000001 = {
+						CreatedOnToolsVersion = 16.0;
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -136,6 +218,7 @@
 			projectRoot = "";
 			targets = (
 				504EC3031FED79650016851F /* App */,
+				E1E000012DB5000000000001 /* EnergiemixWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -154,6 +237,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		E1D000012DB5000000000003 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E1B000012DB5000000000005 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -167,7 +258,26 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		E1D000012DB5000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E1B000012DB5000000000001 /* EnergiemixWidgetBundle.swift in Sources */,
+				E1B000012DB5000000000002 /* Provider.swift in Sources */,
+				E1B000012DB5000000000003 /* WidgetViews.swift in Sources */,
+				E1B000012DB5000000000004 /* Models.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		E1A100012DB5000000000002 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = E1E000012DB5000000000001 /* EnergiemixWidgetExtension */;
+			targetProxy = E1A100012DB5000000000001 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin PBXVariantGroup section */
 		504EC30B1FED79650016851F /* Main.storyboard */ = {
@@ -344,6 +454,62 @@
 			};
 			name = Release;
 		};
+		E1F000012DB5000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 84TCAZ4665;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = EnergiemixWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Energiemix Widget";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = nl.gentleinnovations.energiemix.widget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		E1F000012DB5000000000002 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 84TCAZ4665;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = EnergiemixWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Energiemix Widget";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = nl.gentleinnovations.energiemix.widget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -361,6 +527,15 @@
 			buildConfigurations = (
 				504EC3171FED79650016851F /* Debug */,
 				504EC3181FED79650016851F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		E1F000012DB5000000000003 /* Build configuration list for PBXNativeTarget "EnergiemixWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E1F000012DB5000000000001 /* Debug */,
+				E1F000012DB5000000000002 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
