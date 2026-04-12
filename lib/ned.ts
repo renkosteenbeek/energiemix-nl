@@ -21,7 +21,6 @@ export const SOURCES: SourceMeta[] = [
   { typeId: 26, label: "Overig",       category: "grijs", color: "#8D95A0" },
 ];
 
-export const SOURCE_BY_TYPE = new Map(SOURCES.map((s) => [s.typeId, s]));
 
 type Utilization = {
   validfrom: string;

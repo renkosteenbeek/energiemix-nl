@@ -8,6 +8,7 @@ import {
   type TimePoint,
 } from "@/lib/ned";
 import { apiUrl, isNativeBuild } from "@/lib/api";
+import { formatGWh } from "@/lib/format";
 import { theme } from "@/lib/theme";
 import {
   longDateLabel,
@@ -161,10 +162,6 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
-function formatGWh(kWh: number): string {
-  const gwh = kWh / 1_000_000;
-  return gwh >= 10 ? `${Math.round(gwh)} GWh` : `${gwh.toFixed(1)} GWh`;
-}
 
 function Hero({
   greenPct,

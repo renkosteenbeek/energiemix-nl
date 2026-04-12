@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { colorForGreenPct, type TimePoint } from "@/lib/ned";
+import { formatGWh } from "@/lib/format";
 import { theme } from "@/lib/theme";
 import { compactDateLabel, shortWeekday } from "@/lib/time";
 import { useTimeScrubber, type HourCell } from "@/lib/useTimeScrubber";
@@ -17,10 +18,6 @@ type Bar = HourCell & {
   hasData: boolean;
 };
 
-function formatGWh(kWh: number): string {
-  const gwh = kWh / 1_000_000;
-  return gwh >= 10 ? `${Math.round(gwh)} GWh` : `${gwh.toFixed(1)} GWh`;
-}
 
 export function Timeline({
   timeline,

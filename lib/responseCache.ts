@@ -12,7 +12,13 @@ export function getCached<T>(key: string): T | undefined {
   return entry.data as T;
 }
 
+const MAX_CACHE_SIZE = 100;
+
 export function setCache<T>(key: string, data: T, ttlMs: number): void {
+  if (cache.size >= MAX_CACHE_SIZE && !cache.has(key)) {
+    const oldest = cache.keys().next().value!;
+    cache.delete(oldest);
+  }
   cache.set(key, { data, expiresAt: Date.now() + ttlMs });
 }
 
