@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, useMemo } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   colorForGreenPct,
   colorForGreenPctSoft,
@@ -30,7 +30,7 @@ export function Dashboard({
     useDashboardState(initial);
   const [timelineData, setTimelineData] = useState<TimePoint[]>(timeline);
   const [windowOffset, setWindowOffset] = useState(0);
-  const nowIso = useMemo(() => nowHourIso(), []);
+  const nowIso = nowHourIso();
   const isAtNow = focusIso === nowIso;
 
   useEffect(() => {
@@ -45,8 +45,8 @@ export function Dashboard({
 
   const jumpToNow = useCallback(() => {
     setWindowOffset(0);
-    select(nowIso);
-  }, [select, nowIso]);
+    select(nowHourIso());
+  }, [select]);
 
   const panByHours = useCallback(
     (hours: number) => {
@@ -137,7 +137,7 @@ function Header({ mixLoading }: { mixLoading: boolean }) {
         className="text-[11px] uppercase tracking-[0.2em]"
         style={{ color: theme.dim }}
       >
-        Energiemix NL
+        Stroompeil
       </div>
       <div
         className="w-3 h-3 rounded-full border-t-transparent animate-spin transition-opacity duration-200"
@@ -256,7 +256,7 @@ function Hero({
           </button>
           <div className="px-7 pt-8 pb-10 sm:pt-9 sm:pb-11 flex flex-col gap-4">
             <div className="text-[10px] uppercase tracking-[0.26em] text-white/50">
-              Over Energiemix
+              Over Stroompeil
             </div>
             <p className="text-[14px] sm:text-[15px] leading-[1.65] font-light text-white/85">
               Moet ik mijn auto nu opladen, of is de stroom straks groener?

@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Energiemix NL</string>
-    <string name="title_activity_main">Energiemix NL</string>
-    <string name="package_name">nl.gentleinnovations.energiemix</string>
-    <string name="custom_url_scheme">nl.gentleinnovations.energiemix</string>
+    <string name="app_name">Stroompeil</string>
+    <string name="title_activity_main">Stroompeil</string>
+    <string name="package_name">nl.gentleinnovations.stroompeil</string>
+    <string name="custom_url_scheme">nl.gentleinnovations.stroompeil</string>
 </resources>

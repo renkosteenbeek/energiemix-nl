@@ -90,7 +90,7 @@ De privacy policy moet minimaal vermelden:
 - [ ] Maak Apple Developer account aan ($99/jaar) als dat nog niet bestaat
 - [ ] Maak privacy policy pagina aan
 - [ ] Maak support URL aan (kan dezelfde website zijn)
-- [ ] Controleer dat bundle ID `nl.gentleinnovations.energiemix` correct is in Apple Developer portal
+- [ ] Controleer dat bundle ID `nl.gentleinnovations.stroompeil` correct is in Apple Developer portal
 
 ### App Store Connect
 - [ ] Maak nieuwe app aan in App Store Connect

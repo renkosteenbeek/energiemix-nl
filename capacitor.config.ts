@@ -1,8 +1,8 @@
 import type { CapacitorConfig } from "@capacitor/cli";
 
 const config: CapacitorConfig = {
-  appId: "nl.gentleinnovations.energiemix",
-  appName: "Energiemix NL",
+  appId: "nl.gentleinnovations.stroompeil",
+  appName: "Stroompeil",
   webDir: "out",
   server: {
     allowNavigation: ["energiemix.gentle-innovations.nl"],

@@ -8,7 +8,7 @@ struct EnergiemixWidget: Widget {
         StaticConfiguration(kind: kind, provider: EnergiemixProvider()) { entry in
             EnergiemixWidgetView(entry: entry)
         }
-        .configurationDisplayName("Energiemix")
+        .configurationDisplayName("Stroompeil")
         .description("Hoe groen is de Nederlandse stroom nu?")
         .supportedFamilies([.systemSmall, .systemMedium])
     }

@@ -14,7 +14,7 @@ export default function Loading() {
             className="text-[11px] uppercase tracking-[0.2em]"
             style={{ color: theme.dim }}
           >
-            Energiemix NL
+            Stroompeil
           </div>
           <div
             className="w-3 h-3 rounded-full animate-spin"

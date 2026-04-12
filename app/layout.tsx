@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Energiemix Nederland",
+  title: "Stroompeil",
   description: "Hoe duurzaam is de Nederlandse stroom op dit moment?",
 };
 

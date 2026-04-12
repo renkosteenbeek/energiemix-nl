@@ -1,4 +1,4 @@
-package nl.gentleinnovations.energiemix;
+package nl.gentleinnovations.stroompeil;
 
 import android.os.Bundle;
 import android.webkit.WebView;

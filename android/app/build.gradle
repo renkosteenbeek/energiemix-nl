@@ -1,10 +1,10 @@
 apply plugin: 'com.android.application'
 
 android {
-    namespace = "nl.gentleinnovations.energiemix"
+    namespace = "nl.gentleinnovations.stroompeil"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "nl.gentleinnovations.energiemix"
+        applicationId "nl.gentleinnovations.stroompeil"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
