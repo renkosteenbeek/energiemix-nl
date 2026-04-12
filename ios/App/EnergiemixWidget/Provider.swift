@@ -61,9 +61,10 @@ struct EnergiemixProvider: TimelineProvider {
                 (label: $0.label, pct: Int($0.percentage.rounded()), color: $0.swiftColor)
             }
 
-            let totalGWh = mix.totalKWh >= 1000
-                ? String(format: "%.0f GWh", mix.totalKWh / 1000)
-                : String(format: "%.0f MWh", mix.totalKWh)
+            let gwh = mix.totalKWh / 1_000_000
+            let totalGWh = gwh >= 10
+                ? String(format: "%.0f GWh", gwh)
+                : String(format: "%.1f GWh", gwh)
 
             completion(EnergyEntry(
                 date: .now,
