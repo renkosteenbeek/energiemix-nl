@@ -1,93 +1,90 @@
 import type { Metadata } from "next";
+import { theme } from "@/lib/theme";
 
 export const metadata: Metadata = {
-  title: "Stroompeil - Support",
-  description: "Hulp en ondersteuning voor Stroompeil",
+  title: "Stroompeil - Ondersteuning",
 };
 
 export default function SupportPage() {
   return (
     <main
-      className="min-h-screen flex items-center justify-center px-6"
-      style={{ background: "var(--color-bg)", color: "var(--color-ink)" }}
+      className="min-h-screen w-full"
+      style={{ background: theme.bg, color: theme.ink }}
     >
-      <div className="max-w-md w-full space-y-8 py-16">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            Stroompeil Support
-          </h1>
-          <p
-            className="mt-2 text-sm"
-            style={{ color: "var(--color-dim)" }}
-          >
-            Hulp en ondersteuning
+      <div className="max-w-[600px] mx-auto px-6 py-12">
+        <h1
+          className="text-[11px] uppercase tracking-[0.2em] mb-8"
+          style={{ color: theme.dim }}
+        >
+          Stroompeil - Ondersteuning
+        </h1>
+
+        <section className="mb-10">
+          <h2 className="text-lg font-semibold mb-3">Wat is Stroompeil?</h2>
+          <p className="text-[15px] leading-relaxed" style={{ color: theme.dim }}>
+            Stroompeil laat je in een oogopslag zien hoeveel procent van de
+            Nederlandse elektriciteit duurzaam is. De app toont real-time data
+            van het Nederlandse elektriciteitsnet, opgesplitst naar bron: wind,
+            zon, aardgas, steenkool, kernenergie en meer.
           </p>
-        </div>
+        </section>
 
-        <div className="space-y-6 text-[15px] leading-relaxed">
-          <section>
-            <h2 className="font-medium mb-2">Wat is Stroompeil?</h2>
-            <p style={{ color: "var(--color-dim)" }}>
-              Stroompeil laat je in een oogopslag zien hoeveel procent van
-              de Nederlandse elektriciteit duurzaam wordt opgewekt. De app
-              toont real-time data van het Nationaal Energie Dashboard (NED),
-              opgesplitst naar bron: wind, zon, aardgas, steenkool,
-              kernenergie en meer.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="font-medium mb-2">Veelgestelde vragen</h2>
-            <div className="space-y-4" style={{ color: "var(--color-dim)" }}>
-              <div>
-                <p className="font-medium" style={{ color: "var(--color-ink)" }}>
-                  Waar komt de data vandaan?
-                </p>
-                <p>
-                  Alle energiedata komt van het Nationaal Energie Dashboard
-                  (NED), de officiele databron van de Nederlandse
-                  energiesector.
-                </p>
-              </div>
-              <div>
-                <p className="font-medium" style={{ color: "var(--color-ink)" }}>
-                  Hoe vaak wordt de data bijgewerkt?
-                </p>
-                <p>
-                  De energiemix wordt elk uur bijgewerkt. De widget op je
-                  homescreen ververst automatisch.
-                </p>
-              </div>
-              <div>
-                <p className="font-medium" style={{ color: "var(--color-ink)" }}>
-                  Waarom verschilt het percentage soms?
-                </p>
-                <p>
-                  De energiemix verandert continu. Wind en zon zijn
-                  weersafhankelijk, waardoor het groene percentage
-                  gedurende de dag kan fluctueren.
-                </p>
-              </div>
-              <div>
-                <p className="font-medium" style={{ color: "var(--color-ink)" }}>
-                  Slaat de app persoonlijke gegevens op?
-                </p>
-                <p>
-                  Nee. Stroompeil verzamelt geen persoonlijke data, heeft
-                  geen accounts en bevat geen advertenties.
-                </p>
-              </div>
+        <section className="mb-10">
+          <h2 className="text-lg font-semibold mb-3">Veelgestelde vragen</h2>
+          <dl className="space-y-6">
+            <div>
+              <dt className="font-medium mb-1">Waar komt de data vandaan?</dt>
+              <dd className="text-[15px] leading-relaxed" style={{ color: theme.dim }}>
+                Alle energiedata komt van het Nationaal Energie Dashboard
+                (NED), de officiele databron van de Nederlandse energiesector.
+              </dd>
             </div>
-          </section>
+            <div>
+              <dt className="font-medium mb-1">Hoe vaak wordt de data bijgewerkt?</dt>
+              <dd className="text-[15px] leading-relaxed" style={{ color: theme.dim }}>
+                De data wordt elk uur bijgewerkt. De widget op je homescreen
+                ververst ook elk uur automatisch.
+              </dd>
+            </div>
+            <div>
+              <dt className="font-medium mb-1">Waarom verschilt het groene percentage per uur?</dt>
+              <dd className="text-[15px] leading-relaxed" style={{ color: theme.dim }}>
+                De energiemix verandert constant. Overdag produceert zon meer,
+                's nachts draait wind door. Gas- en kolencentrales schalen op en
+                af om aan de vraag te voldoen.
+              </dd>
+            </div>
+            <div>
+              <dt className="font-medium mb-1">Verzamelt de app persoonlijke gegevens?</dt>
+              <dd className="text-[15px] leading-relaxed" style={{ color: theme.dim }}>
+                Nee. Stroompeil verzamelt geen persoonlijke gegevens, heeft geen
+                accounts en plaatst geen advertenties.
+              </dd>
+            </div>
+          </dl>
+        </section>
 
-          <section>
-            <h2 className="font-medium mb-2">Contact</h2>
-            <p style={{ color: "var(--color-dim)" }}>
-              Vragen, feedback of problemen? Stuur een e-mail
-              naar support@gentle-innovations.nl
-            </p>
-          </section>
-        </div>
+        <section className="mb-10">
+          <h2 className="text-lg font-semibold mb-3">Contact</h2>
+          <p className="text-[15px] leading-relaxed" style={{ color: theme.dim }}>
+            Heb je een vraag, suggestie of probleem? Stuur een e-mail
+            naar{" "}
+            <a
+              href="mailto:support@gentle-innovations.nl"
+              className="underline"
+              style={{ color: theme.ink }}
+            >
+              support@gentle-innovations.nl
+            </a>
+          </p>
+        </section>
+
+        <footer
+          className="pt-8 text-[13px]"
+          style={{ borderTop: `1px solid ${theme.rule}`, color: theme.dim2 }}
+        >
+          Stroompeil is een app van Gentle Innovations.
+        </footer>
       </div>
     </main>
   );
