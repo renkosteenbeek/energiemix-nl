@@ -41,7 +41,7 @@ struct HourChart: View {
                         scrubHour = nil
                     },
                     onPinch: { zoomIn, _ in
-                        if !zoomIn { onZoom(.month, nil) }
+                        if !zoomIn, let coarser = model.scale.coarser { onZoom(coarser, nil) }
                     }
                 )
             }
@@ -59,7 +59,11 @@ struct HourChart: View {
         .accessibilityValue(spokenValue(for: model.focusHour))
         .accessibilityHint("Veeg omhoog of omlaag om een ander uur te kiezen.")
         .ignoresAccessibilityActivation()
-        .accessibilityAction(named: "Uitzoomen") { onZoom(.month, nil) }
+        .accessibilityActions {
+            if let coarser = model.scale.coarser {
+                Button("Uitzoomen") { onZoom(coarser, nil) }
+            }
+        }
         .accessibilityAdjustableAction { direction in
             switch direction {
             case .increment: model.step(by: 1)

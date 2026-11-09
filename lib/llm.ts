@@ -118,9 +118,7 @@ function anthropic(): Anthropic | undefined {
   return client;
 }
 
-export function isModelConfigured(): boolean {
-  return Boolean(process.env.ANTHROPIC_API_KEY);
-}
+export type DescriptionChunk = { text: string; isFallback: boolean };
 
 function remember(key: string, text: string) {
   descriptionCache.set(key, text);
@@ -129,24 +127,24 @@ function remember(key: string, text: string) {
   }, DESCRIPTION_TTL_MS).unref?.();
 }
 
-export function describeStream(facts: Facts): AsyncGenerator<string> {
+export function describeStream(facts: Facts): AsyncGenerator<DescriptionChunk> {
   return streamDescription(cacheKey(facts), SYSTEM_PROMPT, userPrompt(compactPayload(facts)), templateFallback(facts));
 }
 
-export function describeDayStream(facts: DayFacts): AsyncGenerator<string> {
+export function describeDayStream(facts: DayFacts): AsyncGenerator<DescriptionChunk> {
   return streamDescription(dayCacheKey(facts), DAY_SYSTEM_PROMPT, userPrompt(dayPayload(facts)), dayFallback(facts));
 }
 
-async function* streamDescription(key: string, system: string, prompt: string, fallback: string): AsyncGenerator<string> {
+async function* streamDescription(key: string, system: string, prompt: string, fallback: string): AsyncGenerator<DescriptionChunk> {
   const cached = descriptionCache.get(key);
   if (cached) {
-    yield cached;
+    yield { text: cached, isFallback: false };
     return;
   }
 
   const api = anthropic();
   if (!api) {
-    yield fallback;
+    yield { text: fallback, isFallback: true };
     return;
   }
 
@@ -163,7 +161,7 @@ async function* streamDescription(key: string, system: string, prompt: string, f
     for await (const event of stream) {
       if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
         streamed += event.delta.text;
-        yield event.delta.text;
+        yield { text: event.delta.text, isFallback: false };
       }
     }
     const final = await stream.finalMessage();
@@ -182,7 +180,7 @@ async function* streamDescription(key: string, system: string, prompt: string, f
   if (completed && text.length > 0) {
     remember(key, text);
   } else if (text.length === 0) {
-    yield fallback;
+    yield { text: fallback, isFallback: true };
   } else {
     throw new Error("Duiding onvolledig");
   }

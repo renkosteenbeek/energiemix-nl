@@ -66,7 +66,7 @@ Eerste release van Stroompeil. Bekijk actueel hoe groen de Nederlandse stroom is
 - Secundair: Onderwijs (Education)
 
 ## Leeftijdsclassificatie
-- 4+ (geen aanstootgevende inhoud)
+- 4+: vul de leeftijdsvragenlijst in App Store Connect in, inclusief de social-mediavragen, en beantwoord alles met "Nee" of "Geen" (zie `advies.md`)
 
 ## Prijsstelling
 - Gratis

@@ -24,7 +24,7 @@ struct TopSourcesView: View {
                 .background(Capsule().fill(Palette.chip))
                 .overlay(Capsule().stroke(Palette.rule, lineWidth: 1))
                 .accessibilityElement(children: .ignore)
-                .accessibilityLabel("\(source.label), \(Int(source.percentage.rounded())) procent")
+                .accessibilityLabel("\(source.label), \(DutchFormat.percentSpoken(source.percentage))")
             }
         }
     }
@@ -115,7 +115,7 @@ struct AllSourcesView: View {
         .buttonStyle(.plain)
         .opacity(isDimmed ? 0.4 : 1)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(source.label), \(Int(source.percentage.rounded())) procent, \(DutchFormat.megawattHoursSpoken(source.volumeKWh))")
+        .accessibilityLabel("\(source.label), \(DutchFormat.percentSpoken(source.percentage)), \(DutchFormat.megawattHoursSpoken(source.volumeKWh))")
         .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
     }
 }

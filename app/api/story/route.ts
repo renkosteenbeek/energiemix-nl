@@ -1,5 +1,5 @@
 import { computeDayFacts, computeFacts } from "@/lib/insights";
-import { describeDayStream, describeStream, isModelConfigured } from "@/lib/llm";
+import { describeDayStream, describeStream, type DescriptionChunk } from "@/lib/llm";
 import { clampAt, DATA_START_DAY, getMixAt, latestAvailableHour, toAmsterdamDay } from "@/lib/ned";
 import { cacheControl, errorResponse, failure, optionsResponse, withCors } from "@/lib/http";
 
@@ -9,16 +9,24 @@ export function OPTIONS() {
   return optionsResponse();
 }
 
-function streamResponse(chunks: AsyncGenerator<string>): Response {
+async function streamResponse(chunks: AsyncGenerator<DescriptionChunk>): Promise<Response> {
   const encoder = new TextEncoder();
+  const first = await chunks.next();
+  const reusable = !first.done && !first.value.isFallback;
+  let pending = first.done ? undefined : first.value.text;
   const body = new ReadableStream<Uint8Array>({
     async pull(controller) {
+      if (pending !== undefined) {
+        controller.enqueue(encoder.encode(pending));
+        pending = undefined;
+        return;
+      }
       try {
         const { value, done } = await chunks.next();
         if (done) {
           controller.close();
         } else {
-          controller.enqueue(encoder.encode(value));
+          controller.enqueue(encoder.encode(value.text));
         }
       } catch (error) {
         controller.error(error);
@@ -31,7 +39,7 @@ function streamResponse(chunks: AsyncGenerator<string>): Response {
   return new Response(body, {
     headers: withCors({
       "Content-Type": "text/plain; charset=utf-8",
-      "Cache-Control": cacheControl(isModelConfigured() ? STORY_MAX_AGE_SECONDS : 0),
+      "Cache-Control": cacheControl(reusable ? STORY_MAX_AGE_SECONDS : 0),
       "X-Accel-Buffering": "no",
     }),
   });
@@ -57,7 +65,7 @@ export async function GET(request: Request) {
     if (Number.isNaN(at.getTime())) return errorResponse(400, "ongeldige datum");
 
     const facts = await computeFacts(await getMixAt(at));
-    return streamResponse(describeStream(facts));
+    return await streamResponse(describeStream(facts));
   } catch (error) {
     return failure(error);
   }

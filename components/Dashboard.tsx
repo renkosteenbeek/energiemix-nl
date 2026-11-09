@@ -34,14 +34,14 @@ export function Dashboard({
   const isAtNow = focusIso === nowIso;
 
   useEffect(() => {
-    if (timelineData.length > 0 && refreshTrigger === 0) return;
+    if (refreshTrigger === 0 && timeline.length > 0) return;
     fetch(apiUrl("/api/timeline"))
       .then((r) => r.json())
       .then((data: TimePoint[]) => {
         if (Array.isArray(data)) setTimelineData(data);
       })
       .catch(() => {});
-  }, [refreshTrigger]);
+  }, [refreshTrigger, timeline.length]);
 
   const jumpToNow = useCallback(() => {
     setWindowOffset(0);

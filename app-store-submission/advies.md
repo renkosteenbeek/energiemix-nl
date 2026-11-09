@@ -54,7 +54,7 @@ Gegenereerd met de UI-test `AppStoreScreenshots` op de iPhone 18 Pro Max-simulat
 
 Alleen iPhone: de app is iPhone-only, dus iPad-screenshots zijn niet nodig. Apple schaalt de 6,9"-set automatisch voor kleinere iPhones.
 
-Let op: de simulator staat in het Engels, dus systeemteksten op het widget-screenshot (zoals "Search") zijn Engels. Zet de simulator op Nederlands als je dat screenshot opnieuw maakt.
+Het widget-screenshot is gemaakt met de simulator op Nederlands (`AppleLanguages nl-NL`), zodat de systeemteksten op het beginscherm Nederlands zijn. Een beginscherm dat je na het plaatsen van widgets herstart, verliest die widgets; maak het screenshot dus zonder herstart.
 
 ---
 
@@ -108,7 +108,7 @@ Apple vraagt per functie of alle veelvoorkomende taken ermee te doen zijn. Claim
 
 ### Xcode / Build
 - [ ] Versie en buildnummer in `ios/project.yml` (`MARKETING_VERSION` 1.0, `CURRENT_PROJECT_VERSION` 2). Elk geüpload build moet een hoger buildnummer hebben dan het vorige.
-- [ ] `cd ios && xcodegen generate`, open `Stroompeil.xcodeproj`
+- [ ] `cd ios && xcodegen generate` (het Xcode-project staat niet in git), open `Stroompeil.xcodeproj`
 - [ ] Bundle ID's ongewijzigd: `nl.gentleinnovations.stroompeil` en `nl.gentleinnovations.stroompeil.widget`
 - [ ] Product > Archive met het schema Stroompeil, daarna uploaden via Organizer
 
