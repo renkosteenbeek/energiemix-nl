@@ -1,5 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
-import type { Facts } from "./insights";
+import type { DayFacts, Facts } from "./insights";
 
 const MODEL = "claude-haiku-5-5";
 
@@ -13,6 +13,13 @@ function templateFallback(facts: Facts): string {
   return facts.notable.slice(0, 3).join(" ");
 }
 
+function momentOf(focusTime: string): "verleden" | "nu" | "toekomst" {
+  const start = new Date(focusTime).getTime();
+  const now = Date.now();
+  if (start > now) return "toekomst";
+  return now - start < 60 * 60 * 1000 ? "nu" : "verleden";
+}
+
 function compactPayload(facts: Facts) {
   return {
     tijd: new Date(facts.focusTime).toLocaleString("nl-NL", {
@@ -24,7 +31,7 @@ function compactPayload(facts: Facts) {
       timeZone: "Europe/Amsterdam",
     }),
     is_dag: facts.isDaytime,
-    is_toekomst: facts.isFuture,
+    moment: momentOf(facts.focusTime),
     groen_pct: Math.round(facts.greenPct),
     top_bron: facts.topSource,
     bronnen: facts.sources.slice(0, 6).map((s) => ({
@@ -50,11 +57,56 @@ const SYSTEM_PROMPT =
   "Begin nooit met de datum of het tijdstip: die wordt elders al getoond. " +
   "Begin direct met de meest opvallende observatie (bijv. 'Aardgas domineert...', 'Het waait flink...', 'Bewolkt en weinig wind...'). " +
   "Wees specifiek met getallen waar zinvol. " +
-  "Als het toekomst is, gebruik toekomstvorm ('verwacht', 'zal'). " +
+  "Kies de werkwoordstijd op basis van moment: verleden tijd bij 'verleden', tegenwoordige tijd bij 'nu', toekomstvorm ('verwacht', 'zal') bij 'toekomst'. Gebruik het woord 'nu' alleen als moment 'nu' is. " +
   "Maximaal 3 zinnen, samen onder de 50 woorden.";
 
-function userPrompt(facts: Facts): string {
-  return `Feiten:\n${JSON.stringify(compactPayload(facts), null, 2)}\n\nSchrijf de duiding.`;
+const DAY_SYSTEM_PROMPT =
+  "Je schrijft 2 tot 3 korte, feitelijke Nederlandse zinnen over de Nederlandse stroommix van één hele dag, voor een dashboard. " +
+  "Geen marketingtoon, geen emojis, geen 'we' of 'wij', geen vragen, geen aanhalingstekens. " +
+  "Begin nooit met de datum: die wordt elders al getoond. " +
+  "Begin direct met de meest opvallende observatie. " +
+  "Vergelijk waar zinvol met de dertig dagen ervoor (tov_gemiddelde). " +
+  "Gebruik de verleden tijd, behalve als is_vandaag waar is: gebruik dan de tegenwoordige tijd en zeg dat de cijfers voorlopig zijn. " +
+  "Maximaal 3 zinnen, samen onder de 50 woorden.";
+
+function userPrompt(payload: unknown): string {
+  return `Feiten:\n${JSON.stringify(payload, null, 2)}\n\nSchrijf de duiding.`;
+}
+
+function dayPayload(facts: DayFacts) {
+  return {
+    datum: new Date(`${facts.day}T12:00:00Z`).toLocaleDateString("nl-NL", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+      timeZone: "Europe/Amsterdam",
+    }),
+    is_vandaag: facts.isToday,
+    groen_pct: Math.round(facts.greenPct),
+    verbruik_gwh: Math.round(facts.totalKWh / 1_000_000),
+    bronnen: facts.sources.slice(0, 6).map((s) => ({
+      naam: s.label,
+      pct: Number(s.percentage.toFixed(1)),
+      tov_gemiddelde: s.ratio != null ? Number(s.ratio.toFixed(2)) : null,
+    })),
+    rule_based_feiten: facts.notable,
+  };
+}
+
+function dayCacheKey(facts: DayFacts): string {
+  return JSON.stringify({
+    d: facts.day,
+    g: Math.round(facts.greenPct),
+    s: facts.sources.map((s) => [s.typeId, Math.round(s.percentage)]),
+  });
+}
+
+function dayFallback(facts: DayFacts): string {
+  if (facts.notable.length === 0) {
+    return `Deze dag kwam ${facts.greenPct.toFixed(0)}% van de stroom uit duurzame bronnen.`;
+  }
+  return facts.notable.slice(0, 3).join(" ");
 }
 
 let client: Anthropic | undefined;
@@ -70,6 +122,10 @@ export function cachedDescription(facts: Facts): string | undefined {
   return fullCache.get(cacheKey(facts));
 }
 
+export function cachedDayDescription(facts: DayFacts): string | undefined {
+  return fullCache.get(dayCacheKey(facts));
+}
+
 function remember(key: string, text: string) {
   fullCache.set(key, text);
   setTimeout(() => {
@@ -77,8 +133,15 @@ function remember(key: string, text: string) {
   }, CACHE_TTL_MS).unref?.();
 }
 
-export async function* describeStream(facts: Facts): AsyncGenerator<string> {
-  const key = cacheKey(facts);
+export function describeStream(facts: Facts): AsyncGenerator<string> {
+  return streamDescription(cacheKey(facts), SYSTEM_PROMPT, userPrompt(compactPayload(facts)), templateFallback(facts));
+}
+
+export function describeDayStream(facts: DayFacts): AsyncGenerator<string> {
+  return streamDescription(dayCacheKey(facts), DAY_SYSTEM_PROMPT, userPrompt(dayPayload(facts)), dayFallback(facts));
+}
+
+async function* streamDescription(key: string, system: string, prompt: string, fallback: string): AsyncGenerator<string> {
   const cached = fullCache.get(key);
   if (cached) {
     yield cached;
@@ -87,7 +150,7 @@ export async function* describeStream(facts: Facts): AsyncGenerator<string> {
 
   const api = anthropic();
   if (!api) {
-    yield templateFallback(facts);
+    yield fallback;
     return;
   }
 
@@ -95,9 +158,9 @@ export async function* describeStream(facts: Facts): AsyncGenerator<string> {
   const stream = api.messages.stream({
     model: MODEL,
     max_tokens: 4096,
-    system: SYSTEM_PROMPT,
+    system,
     output_config: { effort: "low" },
-    messages: [{ role: "user", content: userPrompt(facts) }],
+    messages: [{ role: "user", content: prompt }],
   });
   try {
     for await (const event of stream) {
@@ -120,6 +183,6 @@ export async function* describeStream(facts: Facts): AsyncGenerator<string> {
   if (text.length > 0) {
     remember(key, text);
   } else {
-    yield templateFallback(facts);
+    yield fallback;
   }
 }

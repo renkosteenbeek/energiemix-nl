@@ -370,6 +370,85 @@ export function getBaseline(typeId: number, hourOfDay: number): Promise<number> 
   return promise;
 }
 
+export const DAILY_MIN_DAY = "2021-01-01";
+
+export type DayPoint = {
+  date: string;
+  totalKWh: number;
+  greenPct: number;
+  volumes: number[];
+};
+
+const amsterdamDayFormat = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "Europe/Amsterdam",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
+export function toAmsterdamDay(date: Date): string {
+  return amsterdamDayFormat.format(date);
+}
+
+export function shiftDay(day: string, days: number): string {
+  const date = new Date(`${day}T12:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+export async function getDailyRange(fromDay: string, toDay: string): Promise<DayPoint[]> {
+  const perType = await Promise.all(
+    SOURCES.map((s) =>
+      fetchUtilizations({
+        typeId: s.typeId,
+        classification: CLASSIFICATION.current,
+        after: shiftDay(fromDay, -2),
+        before: shiftDay(toDay, 2),
+        granularity: 6,
+      }),
+    ),
+  );
+
+  const byDay = new Map<string, number[]>();
+  perType.forEach((data, sourceIndex) => {
+    for (const u of data) {
+      const day = toAmsterdamDay(new Date(u.validfrom));
+      if (day < fromDay || day > toDay) continue;
+      const volumes = byDay.get(day) ?? SOURCES.map(() => 0);
+      volumes[sourceIndex] += u.volume;
+      byDay.set(day, volumes);
+    }
+  });
+
+  return [...byDay.keys()].sort().flatMap((date) => {
+    const volumes = byDay.get(date)!;
+    const total = volumes.reduce((sum, v) => sum + v, 0);
+    if (total <= 0) return [];
+    const green = volumes.reduce((sum, v, i) => (SOURCES[i].category === "groen" ? sum + v : sum), 0);
+    return [{ date, totalKWh: total, greenPct: (green / total) * 100, volumes }];
+  });
+}
+
+type YearCacheEntry = { expiresAt: number; promise: Promise<DayPoint[]> };
+const yearCacheKey = Symbol.for("energiemix.yearCache");
+const globalWithCache = globalThis as typeof globalThis & { [yearCacheKey]?: Map<number, YearCacheEntry> };
+const yearCache = (globalWithCache[yearCacheKey] ??= new Map<number, YearCacheEntry>());
+
+export function getYear(year: number): Promise<DayPoint[]> {
+  const now = Date.now();
+  const cached = yearCache.get(year);
+  if (cached && cached.expiresAt > now) return cached.promise;
+
+  const today = toAmsterdamDay(new Date(now));
+  const isCurrent = today.startsWith(`${year}-`);
+  const promise = getDailyRange(`${year}-01-01`, isCurrent ? today : `${year}-12-31`);
+  yearCache.set(year, { expiresAt: now + (isCurrent ? 30 * 60 * 1000 : 24 * 60 * 60 * 1000), promise });
+  promise.catch(() => {
+    if (yearCache.get(year)?.promise === promise) yearCache.delete(year);
+  });
+  return promise;
+}
+
 export function latestAvailableHour(): Date {
   const now = new Date();
   now.setMinutes(0, 0, 0);

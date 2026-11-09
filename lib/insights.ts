@@ -1,4 +1,16 @@
-import { getBaseline, getMixAt, type Category, type MixResult, type SourceSlice } from "./ned";
+import {
+  DAILY_MIN_DAY,
+  getBaseline,
+  getMixAt,
+  getYear,
+  shiftDay,
+  SOURCES,
+  toAmsterdamDay,
+  type Category,
+  type DayPoint,
+  type MixResult,
+  type SourceSlice,
+} from "./ned";
 
 export type SourceFact = {
   typeId: number;
@@ -120,4 +132,71 @@ export async function computeFacts(at: Date, prefetchedMix?: MixResult): Promise
     sources,
     notable,
   };
+}
+
+export type DayFacts = {
+  day: string;
+  isToday: boolean;
+  greenPct: number;
+  totalKWh: number;
+  sources: SourceFact[];
+  notable: string[];
+};
+
+async function daysAround(day: string): Promise<DayPoint[]> {
+  const year = Number(day.slice(0, 4));
+  const needsPreviousYear = shiftDay(day, -30).slice(0, 4) !== day.slice(0, 4) && `${year - 1}-12-31` >= DAILY_MIN_DAY;
+  const years = await Promise.all(needsPreviousYear ? [getYear(year - 1), getYear(year)] : [getYear(year)]);
+  return years.flat();
+}
+
+export async function computeDayFacts(day: string): Promise<DayFacts | undefined> {
+  const points = await daysAround(day);
+  const target = points.find((p) => p.date === day);
+  if (!target) return undefined;
+
+  const windowStart = shiftDay(day, -30);
+  const history = points.filter((p) => p.date >= windowStart && p.date < day);
+  const isToday = day === toAmsterdamDay(new Date());
+
+  const sources: SourceFact[] = SOURCES.map((s, i) => {
+    const volume = target.volumes[i];
+    const baseline = history.length > 0 ? history.reduce((sum, p) => sum + p.volumes[i], 0) / history.length : undefined;
+    return {
+      typeId: s.typeId,
+      label: s.label,
+      category: s.category,
+      percentage: (volume / target.totalKWh) * 100,
+      volumeKWh: volume,
+      baselineKWh: baseline,
+      ratio: baseline && baseline > 0 ? volume / baseline : undefined,
+    };
+  })
+    .filter((s) => s.volumeKWh > 0)
+    .sort((a, b) => b.volumeKWh - a.volumeKWh);
+
+  const notable: string[] = [];
+  const windRatios = [1, 17]
+    .map((typeId) => sources.find((s) => s.typeId === typeId)?.ratio)
+    .filter((r): r is number => r != null);
+  if (windRatios.length > 0) {
+    const ratio = windRatios.reduce((a, b) => a + b, 0) / windRatios.length;
+    if (ratio > 1.5) notable.push(`Veel wind: ${ratio.toFixed(1)}× het gemiddelde van de dertig dagen ervoor.`);
+    else if (ratio < 0.5) notable.push(`Weinig wind: ongeveer ${Math.round(ratio * 100)}% van het gemiddelde van de dertig dagen ervoor.`);
+  }
+  const sun = sources.find((s) => s.typeId === 2);
+  if (sun?.ratio != null) {
+    if (sun.ratio > 1.3) notable.push("Zonniger dan de dertig dagen ervoor.");
+    else if (sun.ratio < 0.6) notable.push("Minder zon dan de dertig dagen ervoor.");
+  }
+  const gas = sources.find((s) => s.typeId === 18);
+  if (gas && gas.percentage > 40) {
+    notable.push(`Aardgas ${isToday ? "levert" : "leverde"} ${gas.percentage.toFixed(0)}% van de stroom.`);
+  }
+  const coal = sources.find((s) => s.typeId === 19);
+  if (coal && coal.percentage > 15) {
+    notable.push(`Steenkool ${isToday ? "draait" : "draaide"} fors mee (${coal.percentage.toFixed(0)}%).`);
+  }
+
+  return { day, isToday, greenPct: target.greenPct, totalKWh: target.totalKWh, sources, notable };
 }
