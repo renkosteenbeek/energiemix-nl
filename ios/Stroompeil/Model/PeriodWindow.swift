@@ -1,3 +1,4 @@
+import CoreGraphics
 import Foundation
 
 enum TimeScale: Int, CaseIterable, Comparable, Sendable {
@@ -24,15 +25,17 @@ enum TimeScale: Int, CaseIterable, Comparable, Sendable {
 struct PeriodWindow: Equatable, Sendable {
     static let earliestDay = DutchFormat.day(fromISO: "2021-01-01")!
 
-    let isYear: Bool
+    let scale: TimeScale
     let anchor: Date
     let today: Date
 
     init(scale: TimeScale, anchor: Date, today: Date) {
-        isYear = scale == .year
+        self.scale = scale == .year ? .year : .month
         self.anchor = DutchFormat.startOfDay(anchor)
         self.today = DutchFormat.startOfDay(today)
     }
+
+    var isYear: Bool { scale == .year }
 
     private var calendar: Calendar { DutchFormat.calendar }
     private var component: Calendar.Component { isYear ? .year : .month }
@@ -61,6 +64,10 @@ struct PeriodWindow: Equatable, Sendable {
     func index(of day: Date) -> Int? {
         let offset = calendar.dateComponents([.day], from: start, to: DutchFormat.startOfDay(day)).day ?? -1
         return (0..<count).contains(offset) ? offset : nil
+    }
+
+    func fraction(of day: Date) -> CGFloat {
+        index(of: day).map { (CGFloat($0) + 0.5) / CGFloat(count) } ?? 0.5
     }
 
     var canGoBack: Bool { start > Self.earliestDay }

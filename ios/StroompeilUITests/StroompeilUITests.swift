@@ -124,6 +124,14 @@ final class StroompeilUITests: XCTestCase {
         let nowGone = NSPredicate(format: "exists == false")
         expectation(for: nowGone, evaluatedWith: app.buttons["Terug naar nu"])
         waitForExpectations(timeout: 10)
+
+        app.buttons["Jaar"].tap()
+        XCTAssertTrue(app.descendants(matching: .any).matching(NSPredicate(format: "label BEGINSWITH %@", "Tijdlijn per dag over")).firstMatch.waitForExistence(timeout: 10))
+
+        app.open(URL(string: "stroompeil://nu")!)
+        XCTAssertTrue(app.wait(for: .runningForeground, timeout: 10))
+        XCTAssertTrue(app.descendants(matching: .any)["Tijdlijn per uur"].waitForExistence(timeout: 10))
+        XCTAssertFalse(app.buttons["Terug naar nu"].exists)
     }
 
     private func capture(_ name: String) {

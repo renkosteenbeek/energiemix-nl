@@ -13,7 +13,7 @@ struct SectionLabel: View {
         MicroLabel(text: text, baseSize: 10, trackingRatio: 0.26)
             .foregroundStyle(Palette.dim)
             .padding(.bottom, bottomPadding)
-            .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+            .dynamicTypeSize(...DynamicTypeSize.accessibility2)
             .accessibilityAddTraits(.isHeader)
     }
 }
@@ -182,5 +182,27 @@ struct FlowLayout: Layout {
         let ideal = subview.sizeThatFits(.unspecified)
         guard ideal.width > maxWidth else { return ideal }
         return subview.sizeThatFits(ProposedViewSize(width: maxWidth, height: nil))
+    }
+}
+
+struct CircleControl<Label: View>: View {
+    let enabled: Bool
+    let accessibilityLabel: String
+    let action: () -> Void
+    @ViewBuilder let label: Label
+
+    var body: some View {
+        Button(action: action) {
+            label
+                .foregroundStyle(Palette.ink)
+                .frame(width: 34, height: 34)
+                .overlay(Circle().stroke(Palette.rule, lineWidth: 1))
+                .frame(width: 40, height: 44)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(!enabled)
+        .opacity(enabled ? 1 : 0.3)
+        .accessibilityLabel(accessibilityLabel)
     }
 }

@@ -39,7 +39,7 @@ struct DashboardView: View {
             if phase == .active { model.sceneBecameActive() }
         }
         .onOpenURL { url in
-            if url.scheme == AppConfig.nowDeepLink.scheme { model.jumpToNow() }
+            if url.scheme == AppConfig.nowDeepLink.scheme { model.showNow() }
         }
     }
 
@@ -58,13 +58,13 @@ struct DashboardView: View {
                 .padding(.top, 24)
                 .padding(.bottom, 16)
 
-            RhythmView(model: model)
+            TimelineSection(model: model)
                 .padding(.top, 32)
                 .padding(.bottom, 16)
 
             VStack(alignment: .leading, spacing: 0) {
                 SectionLabel("Duiding")
-                StoryView(text: model.story, phase: model.storyPhase, onRetry: model.retryStory)
+                StoryView(feed: model.story)
             }
             .padding(.vertical, 16)
 
@@ -104,9 +104,7 @@ struct DashboardView: View {
             } else {
                 StatusCard(
                     title: "Geen data voor \(focusTitle)",
-                    message: snapshot.span == .hour
-                        ? "Het Nationaal Energie Dashboard heeft voor dit uur nog geen cijfers."
-                        : "Het Nationaal Energie Dashboard heeft voor deze dag nog geen cijfers.",
+                    message: snapshot.missingDataMessage,
                     retry: nil
                 )
             }

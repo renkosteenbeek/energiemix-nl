@@ -3,7 +3,7 @@ import WidgetKit
 
 struct EnergyEntry: TimelineEntry {
     enum Content {
-        case mix(Mix)
+        case snapshot(Snapshot)
         case unavailable
     }
 
@@ -11,7 +11,7 @@ struct EnergyEntry: TimelineEntry {
     let content: Content
 
     static var sample: EnergyEntry {
-        EnergyEntry(date: .now, content: .mix(.sample))
+        EnergyEntry(date: .now, content: .snapshot(Snapshot(mix: .sample)))
     }
 }
 
@@ -40,7 +40,7 @@ struct StroompeilProvider: TimelineProvider {
 
     func getSnapshot(in context: Context, completion: @escaping @Sendable (EnergyEntry) -> Void) {
         if context.isPreview {
-            completion(WidgetCache.load().map { EnergyEntry(date: .now, content: .mix($0)) } ?? .sample)
+            completion(WidgetCache.load().map { EnergyEntry(date: .now, content: .snapshot(Snapshot(mix: $0))) } ?? .sample)
             return
         }
         Task {
@@ -60,13 +60,14 @@ struct StroompeilProvider: TimelineProvider {
         let hour = now.flooredToHour
         do {
             let mix = try await source.mix(at: hour, reload: false)
-            guard mix.hasData else { throw APIError.invalidResponse }
+            let snapshot = Snapshot(mix: mix)
+            guard snapshot.hasData else { throw APIError.invalidResponse }
             WidgetCache.save(mix)
-            return (EnergyEntry(date: now, content: .mix(mix)), hour.addingHours(1).addingTimeInterval(5 * 60))
+            return (EnergyEntry(date: now, content: .snapshot(snapshot)), hour.addingHours(1).addingTimeInterval(5 * 60))
         } catch {
             let retry = now.addingTimeInterval(15 * 60)
             if let cached = WidgetCache.load(), cached.hour >= hour.addingHours(-Self.maxCacheAgeHours) {
-                return (EnergyEntry(date: now, content: .mix(cached)), retry)
+                return (EnergyEntry(date: now, content: .snapshot(Snapshot(mix: cached))), retry)
             }
             return (EnergyEntry(date: now, content: .unavailable), retry)
         }

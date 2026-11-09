@@ -5,7 +5,7 @@ enum Palette {
     static let background = adaptive(light: 0xFAFAF7, dark: 0x141413)
     static let ink = adaptive(light: 0x0B0B0A, dark: 0xE8E6E1)
     static let dim = adaptive(light: 0x6B6660, dark: 0x9C9891, lightHighContrast: 0x4A4641, darkHighContrast: 0xC4C0B9)
-    static let dim2 = adaptive(light: 0x97928A, dark: 0x706C66, lightHighContrast: 0x5F5A54, darkHighContrast: 0xA5A19A)
+    static let dim2 = adaptive(light: 0x76716A, dark: 0x8E8A83, lightHighContrast: 0x5F5A54, darkHighContrast: 0xADA9A2)
     static let rule = adaptive(light: 0xE6E2D8, dark: 0x2A2926, lightHighContrast: 0xC9C4B8, darkHighContrast: 0x45433F)
     static let rule2 = adaptive(light: 0xEFEBE0, dark: 0x1F1F1D, lightHighContrast: 0xDDD8CB, darkHighContrast: 0x33322F)
     static let chip = adaptive(light: 0xF2EEE4, dark: 0x252422)

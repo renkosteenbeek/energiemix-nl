@@ -67,6 +67,40 @@ De app verzamelt geen persoonlijke gegevens, heeft geen accounts, geen analytics
 
 ---
 
+## Eisen voor iOS 27 (stand november 2026)
+
+- **SDK**: sinds april 2026 moet elke upload met Xcode 26 of nieuwer en de iOS 26 SDK gebouwd zijn. Stroompeil bouwt met Xcode 27.2 en de iOS 27.2 SDK, dus dat is gedekt.
+- **Minimale iOS-versie**: uploads moeten iOS 13 of hoger targeten, vanaf april 2027 iOS 15 of hoger (in combinatie met de iOS 27 SDK). De app target iOS 17.
+- **Leeftijdsclassificatie**: sinds september 2026 bevat de vragenlijst in App Store Connect ook vragen over social media (berichten tussen gebruikers, door gebruikers gemaakte content, profielen). Zonder ingevulde vragenlijst kun je geen nieuwe versie indienen. Antwoorden voor Stroompeil: overal "Nee" of "Geen" (geen gebruikerscontent, geen communicatie tussen gebruikers, geen webbrowser, geen gokken, geen wedstrijden, geen medische of gezondheidsinformatie). Uitkomst: **4+**.
+- **App-icoon**: een Icon Composer-bestand (`.icon`) met Liquid Glass-lagen is aanbevolen, niet verplicht. De asset catalog bevat een licht, donker en getint icoon, zodat het icoon in alle weergaven van het beginscherm klopt.
+- **Screenshots**: 6,9" (1320 x 2868) zonder alfakanaal. De set in `screenshots/` voldoet daaraan.
+
+Bronnen:
+- [SDK minimum requirements](https://developer.apple.com/news/upcoming-requirements/) (Apple)
+- [App Store uploads must now target iOS 13 or later, and iOS 15 from April 2027](https://www.macobserver.com/news/app-store-ios-13-minimum-target/) (MacObserver)
+- [Age rating questionnaire now includes social media questions](https://developer.apple.com/news/?id=tlur8uvi) (Apple)
+- [Overview of Accessibility Nutrition Labels](https://developer.apple.com/help/app-store-connect/manage-app-accessibility/overview-of-accessibility-nutrition-labels) en [Manage Accessibility Nutrition Labels](https://developer.apple.com/help/app-store-connect/manage-app-accessibility/manage-accessibility-nutrition-labels) (App Store Connect Help)
+- [WWDC26-sessie 8012 over app-iconen](https://developer.apple.com/videos/play/wwdc2026/8012/) (Apple)
+
+---
+
+## Toegankelijkheid (Accessibility Nutrition Labels)
+
+Apple vraagt per functie of alle veelvoorkomende taken ermee te doen zijn. Claim een functie alleen als dat echt zo is; Apple kan een claim laten verwijderen. Voor Stroompeil zijn de veelvoorkomende taken: het huidige percentage lezen, een ander uur of een andere dag kiezen, uitzoomen naar maand en jaar, de duiding lezen en de bronnen bekijken.
+
+| Functie | Claimen | Waarom |
+|---|---|---|
+| VoiceOver | Ja | Hero, tijdlijn (verstelbaar met omhoog/omlaag vegen, acties Uitzoomen/Inzoomen), duiding en bronnen hebben Nederlandse labels; de UI-tests sturen de app via diezelfde labels aan. |
+| Larger Text | Ja | Alle tekst schaalt mee met Dynamic Type. Kleine labels (schaalkeuze, sectiekoppen, assen in de grafiek) hebben een bovengrens van Accessibility 2 of zijn decoratief en verborgen voor VoiceOver; de inhoud staat dan ook in de preview-regel en de hero. Gecontroleerd tot de grootste maat. |
+| Dark Interface | Ja | Volledige donkere modus, ook in de widgets. |
+| Differentiate Without Color Alone | Ja | Elk percentage staat ook als getal naast de kleur; de bronnen hebben naam en percentage naast hun kleurstip. |
+| Sufficient Contrast | Ja | Gewone tekst haalt minimaal 4,5:1. Met Verhoog contrast krijgen de hero en de widgets donkerdere kaarten en dekkender tekst. |
+| Reduced Motion | Ja | Met Verminder beweging vallen de zoomovergang en het omdraaien van de kaart terug op een korte fade. |
+| Voice Control | Nee | De knoppen hebben namen, maar het kiezen van een uur op de tijdlijn gaat via slepen en is met Voice Control niet goed te doen. |
+| Captions / Audio Descriptions | n.v.t. | De app heeft geen video of audio. |
+
+---
+
 ## Checklist voor Submission
 
 ### Server
@@ -82,7 +116,8 @@ De app verzamelt geen persoonlijke gegevens, heeft geen accounts, geen analytics
 - [ ] Teksten invullen (zie `app-store-teksten.md`)
 - [ ] Screenshots uploaden (6,9")
 - [ ] App Privacy: Data Not Collected
-- [ ] Leeftijdsclassificatie 4+
+- [ ] Leeftijdsclassificatie: vragenlijst invullen inclusief de social-mediavragen (alles "Nee"/"Geen"), uitkomst 4+
+- [ ] Accessibility Nutrition Labels invullen volgens de tabel hierboven
 - [ ] Export compliance: de Info.plist bevat `ITSAppUsesNonExemptEncryption = NO`, dus deze vraag wordt niet meer gesteld
 - [ ] Review notes toevoegen (zie `review-notes.md`)
 

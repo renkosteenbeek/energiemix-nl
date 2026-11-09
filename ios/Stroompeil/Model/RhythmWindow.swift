@@ -5,7 +5,6 @@ struct RhythmWindow: Equatable, Sendable {
     static let hoursBack = 48
     static let hoursForward = 24
     static let panStep = 24
-    static let maxHoursBack = 720
 
     let nowHour: Date
     let offset: Int
@@ -26,6 +25,10 @@ struct RhythmWindow: Equatable, Sendable {
     }
 
     var nowIndex: Int? { index(of: nowHour) }
+
+    func fraction(of hour: Date) -> CGFloat {
+        index(of: hour).map { (CGFloat($0) + 0.5) / CGFloat(count) } ?? 0.5
+    }
 
     func clamp(_ hour: Date) -> Date {
         min(max(hour.flooredToHour, startHour), endHour)

@@ -9,7 +9,7 @@ Optionele bijschriften bij de screenshots. Kort en krachtig.
 **Caption:** Elke bron, van zon tot kolen
 
 ## 3: `03-nu-met-verwachting.png`
-**Caption:** Dagritme en verwachting voor de komende uren
+**Caption:** Elk uur, met de verwachting voor de komende uren
 
 ## 4: `04-over-stroompeil.png`
 **Caption:** Data van het Nationaal Energie Dashboard

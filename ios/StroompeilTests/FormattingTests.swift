@@ -44,7 +44,10 @@ struct FormattingTests {
     @Test func percentRoundsHalfUp() {
         #expect(DutchFormat.percent(42.5) == "43%")
         #expect(DutchFormat.percent(42.49) == "42%")
-        #expect(DutchFormat.percent(0.4) == "0%")
+        #expect(DutchFormat.percent(0.4) == "<1%")
+        #expect(DutchFormat.percent(0) == "0%")
+        #expect(DutchFormat.percentSpoken(0.2) == "minder dan 1 procent")
+        #expect(DutchFormat.percentSpoken(61.5) == "62 procent")
     }
 
     @Test func relativeLabelComparesWholeHours() {

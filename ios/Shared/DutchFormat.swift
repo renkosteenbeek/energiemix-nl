@@ -70,19 +70,20 @@ enum DutchFormat {
         calendar.component(.year, from: date)
     }
 
+    private static func withYear(_ label: String, of date: Date, now: Date) -> String {
+        year(date) == year(now) ? label : "\(label) \(year(date))"
+    }
+
     static func dayLong(_ date: Date, now: Date) -> String {
-        let label = date.formatted(dayLongStyle)
-        return year(date) == year(now) ? label : "\(label) \(year(date))"
+        withYear(date.formatted(dayLongStyle), of: date, now: now)
     }
 
     static func dayCompact(_ date: Date, now: Date) -> String {
-        let label = date.formatted(dayCompactStyle).replacingOccurrences(of: ".", with: "").capitalizedFirst
-        return year(date) == year(now) ? label : "\(label) \(year(date))"
+        withYear(date.formatted(dayCompactStyle).replacingOccurrences(of: ".", with: "").capitalizedFirst, of: date, now: now)
     }
 
     static func dayShort(_ date: Date, now: Date) -> String {
-        let label = "\(calendar.component(.day, from: date)) \(monthShort(date).lowercased())"
-        return year(date) == year(now) ? label : "\(label) \(year(date))"
+        withYear("\(calendar.component(.day, from: date)) \(monthShort(date).lowercased())", of: date, now: now)
     }
 
     static func monthTitle(_ date: Date) -> String {
@@ -148,7 +149,15 @@ enum DutchFormat {
     }
 
     static func percent(_ value: Double) -> String {
-        "\(Int(value.rounded()))%"
+        isTrace(value) ? "<1%" : "\(Int(value.rounded()))%"
+    }
+
+    static func percentSpoken(_ value: Double) -> String {
+        isTrace(value) ? "minder dan 1 procent" : "\(Int(value.rounded())) procent"
+    }
+
+    private static func isTrace(_ value: Double) -> Bool {
+        value > 0 && value < 0.5
     }
 
     static func number(_ value: Double, fractionDigits: Int) -> String {

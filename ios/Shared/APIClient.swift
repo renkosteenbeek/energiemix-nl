@@ -12,6 +12,7 @@ protocol EnergyDataSource: Sendable {
 enum APIError: LocalizedError, Equatable {
     case offline
     case timeout
+    case connectionFailed
     case server(status: Int)
     case invalidResponse
 
@@ -19,6 +20,7 @@ enum APIError: LocalizedError, Equatable {
         switch self {
         case .offline: "Geen internetverbinding."
         case .timeout: "De server reageert niet."
+        case .connectionFailed: "De verbinding met de server is mislukt."
         case .server: "De server kon de gegevens nu niet leveren."
         case .invalidResponse: "De gegevens van de server waren onleesbaar."
         }
@@ -33,12 +35,7 @@ struct APIClient: EnergyDataSource {
 
     func mix(at hour: Date, reload: Bool) async throws -> Mix {
         let request = makeRequest(path: "api/mix", query: ["at": ISODate.string(from: hour.flooredToHour)], reload: reload)
-        let data = try await fetch(request)
-        do {
-            return try JSONDecoder.stroompeil.decode(MixResponse.self, from: data).mix
-        } catch {
-            throw APIError.invalidResponse
-        }
+        return try await decode(MixResponse.self, from: request).mix
     }
 
     func timeline(reload: Bool) async throws -> [TimePoint] {
@@ -88,14 +85,12 @@ struct APIClient: EnergyDataSource {
                     continuation.yield(text)
                     continuation.finish()
                 } catch {
-                    if error is CancellationError || (error as? URLError)?.code == .cancelled {
-                        continuation.finish(throwing: CancellationError())
-                    } else if let cached = Self.cachedData(for: request, in: session),
-                              let text = String(data: cached, encoding: .utf8) {
-                        continuation.yield(text)
+                    do {
+                        let cached = try Self.cachedFallback(for: request, in: session, after: error)
+                        continuation.yield(String(decoding: cached, as: UTF8.self))
                         continuation.finish()
-                    } else {
-                        continuation.finish(throwing: Self.map(error))
+                    } catch {
+                        continuation.finish(throwing: error)
                     }
                 }
             }
@@ -119,14 +114,18 @@ struct APIClient: EnergyDataSource {
             try Self.validate(response)
             return data
         } catch {
-            if error is CancellationError || (error as? URLError)?.code == .cancelled {
-                throw CancellationError()
-            }
-            if let cached = Self.cachedData(for: request, in: session) {
-                return cached
-            }
-            throw Self.map(error)
+            return try Self.cachedFallback(for: request, in: session, after: error)
         }
+    }
+
+    private static func cachedFallback(for request: URLRequest, in session: URLSession, after error: Error) throws -> Data {
+        if error is CancellationError || (error as? URLError)?.code == .cancelled {
+            throw CancellationError()
+        }
+        if let cached = cachedData(for: request, in: session) {
+            return cached
+        }
+        throw map(error)
     }
 
     private static func validate(_ response: URLResponse) throws {
@@ -153,7 +152,7 @@ struct APIClient: EnergyDataSource {
              .dnsLookupFailed, .dataNotAllowed, .internationalRoamingOff:
             return .offline
         default:
-            return .server(status: urlError.errorCode)
+            return .connectionFailed
         }
     }
 }

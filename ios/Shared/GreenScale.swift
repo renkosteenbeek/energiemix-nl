@@ -28,8 +28,18 @@ enum GreenBand: Equatable, Sendable {
         switch self {
         case .low: Palette.adaptive(light: 0xB91C1C, dark: 0xEF4444)
         case .moderate: Palette.adaptive(light: 0xB45309, dark: 0xF59E0B)
-        case .good: Palette.adaptive(light: 0x2F8F3A, dark: 0x65C46A)
+        case .good: Palette.adaptive(light: 0x2B7F38, dark: 0x65C46A)
         case .high: Palette.adaptive(light: 0x0F5132, dark: 0x4CB782)
+        }
+    }
+
+    func cardColor(increasedContrast: Bool) -> Color {
+        guard increasedContrast else { return color }
+        switch self {
+        case .low: return Color(hex: 0xB91C1C)
+        case .moderate: return Color(hex: 0xA85006)
+        case .good: return Color(hex: 0x267A33)
+        case .high: return Color(hex: 0x0F5132)
         }
     }
 
@@ -44,19 +54,41 @@ enum GreenBand: Equatable, Sendable {
 }
 
 struct CardGradient: View {
-    let top: Color
-    let bottom: Color
+    private enum Style {
+        case band(GreenBand)
+        case custom(top: Color, bottom: Color)
+    }
+
+    private let style: Style
+
+    @Environment(\.colorSchemeContrast) private var contrast
 
     static let edge = Color(hex: 0x0A0A0A)
 
     init(band: GreenBand) {
-        top = band.color
-        bottom = band.softColor
+        style = .band(band)
     }
 
     init(top: Color, bottom: Color) {
-        self.top = top
-        self.bottom = bottom
+        style = .custom(top: top, bottom: bottom)
+    }
+
+    static var neutral: CardGradient {
+        CardGradient(top: Color(hex: 0x2A2926), bottom: Color(hex: 0x1A1A19))
+    }
+
+    private var top: Color {
+        switch style {
+        case .band(let band): band.cardColor(increasedContrast: contrast == .increased)
+        case .custom(let top, _): top
+        }
+    }
+
+    private var bottom: Color {
+        switch style {
+        case .band(let band): band.softColor
+        case .custom(_, let bottom): bottom
+        }
     }
 
     var body: some View {

@@ -10,7 +10,6 @@ struct HeroCard: View {
     @AccessibilityFocusState private var focusedFace: HeroFace?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-
     var body: some View {
         FlipCard(isFlipped: isFlipped, reduceMotion: reduceMotion) {
             HeroFront(
@@ -52,40 +51,21 @@ private struct HeroFront: View {
     @ScaledMetric(relativeTo: .title2) private var captionSize: CGFloat = 24
     @ScaledMetric(relativeTo: .subheadline) private var usageSize: CGFloat = 14
 
+    @Environment(\.colorSchemeContrast) private var contrast
+
     private var numberSize: CGFloat { min(max(screenWidth * 0.32, 96), 208) }
+    private var increased: Bool { contrast == .increased }
     private var percentSize: CGFloat { min(max(screenWidth * 0.07, 32), 56) }
     private var band: GreenBand { GreenBand(percentage: snapshot.greenPct) }
 
-    private var isPreliminaryDay: Bool {
-        snapshot.span == .day && snapshot.date == DutchFormat.startOfDay(nowHour)
-    }
-
-    private var title: String {
-        switch snapshot.span {
-        case .hour: DutchFormat.long(snapshot.date)
-        case .day: DutchFormat.dayLong(snapshot.date, now: nowHour)
-        }
-    }
-
-    private var relative: String {
-        switch snapshot.span {
-        case .hour: DutchFormat.relative(hour: snapshot.date, now: nowHour)
-        case .day: DutchFormat.dayRelative(snapshot.date, now: nowHour)
-        }
-    }
-
-    private var usage: String {
-        let amount = DutchFormat.gigawattHours(snapshot.totalKWh)
-        switch snapshot.span {
-        case .hour: return "\(amount) verbruik"
-        case .day: return isPreliminaryDay ? "\(amount) verbruik · voorlopig" : "\(amount) verbruik op deze dag"
-        }
-    }
+    private var title: String { snapshot.title(now: nowHour) }
+    private var relative: String { snapshot.relativeTime(now: nowHour) }
+    private var usage: String { snapshot.usage(now: nowHour) }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             MicroLabel(text: title, baseSize: 11, trackingRatio: 0.2)
-                .foregroundStyle(.white.opacity(0.7))
+                .foregroundStyle(.white.opacity(increased ? 0.92 : 0.7))
                 .lineLimit(3)
                 .fixedSize(horizontal: false, vertical: true)
                 .dynamicTypeSize(...DynamicTypeSize.accessibility1)
@@ -102,12 +82,12 @@ private struct HeroFront: View {
                     .minimumScaleFactor(0.5)
                 Text(verbatim: "%")
                     .font(.system(size: percentSize, weight: .light))
-                    .foregroundStyle(.white.opacity(0.85))
+                    .foregroundStyle(.white.opacity(increased ? 1 : 0.85))
             }
             .padding(.top, 4)
             .padding(.vertical, -numberSize * 0.1)
 
-            Text("duurzaam \(Text(verbatim: "· \(relative)").foregroundStyle(.white.opacity(0.6)))")
+            Text("duurzaam \(Text(verbatim: "· \(relative)").foregroundStyle(.white.opacity(increased ? 0.9 : 0.6)))")
                 .font(.system(size: captionSize, weight: .light))
                 .tracking(-0.3)
                 .foregroundStyle(.white.opacity(0.95))
@@ -117,7 +97,7 @@ private struct HeroFront: View {
                 Text(verbatim: usage)
                     .font(.system(size: usageSize, weight: .light))
                     .monospacedDigit()
-                    .foregroundStyle(.white.opacity(0.5))
+                    .foregroundStyle(.white.opacity(increased ? 0.9 : 0.5))
                     .padding(.top, 8)
             }
         }
@@ -156,12 +136,12 @@ private struct HeroFront: View {
 
     private var accessibilityText: String {
         var parts = [
-            "\(snapshot.roundedGreenPct) procent duurzame stroom",
+            "\(DutchFormat.percentSpoken(snapshot.greenPct)) duurzame stroom",
             relative,
             title,
         ]
         if snapshot.totalKWh > 0 {
-            parts.append(usage.replacingOccurrences(of: "GWh", with: "gigawattuur"))
+            parts.append(snapshot.usage(now: nowHour, spoken: true))
         }
         return parts.joined(separator: ", ")
     }
@@ -172,38 +152,41 @@ private struct HeroBack: View {
     let focus: AccessibilityFocusState<HeroFace?>.Binding
     let onClose: () -> Void
 
+    @Environment(\.colorSchemeContrast) private var contrast
+    private var increased: Bool { contrast == .increased }
+
     @ScaledMetric(relativeTo: .subheadline) private var bodySize: CGFloat = 15
     @ScaledMetric(relativeTo: .footnote) private var smallSize: CGFloat = 13
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             MicroLabel(text: "Over Stroompeil", baseSize: 10, trackingRatio: 0.26)
-                .foregroundStyle(.white.opacity(0.5))
+                .foregroundStyle(.white.opacity(increased ? 0.85 : 0.5))
                 .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                 .accessibilityAddTraits(.isHeader)
                 .accessibilityFocused(focus, equals: .back)
 
             paragraph("Moet ik mijn auto nu opladen, of is de stroom straks groener? Die vraag was de aanleiding voor dit project. De bestaande apps vond ik niet mooi genoeg, dus bouwde ik dit zelf.")
-            paragraph("Het grote getal is het percentage groene stroom in Nederland op dit moment. Tik op de tijdlijn of sleep eroverheen om andere uren te vergelijken.")
-            paragraph("Data van ned.nl, het platform van de Nederlandse netbeheerders. De duiding wordt automatisch geschreven door een taalmodel.", opacity: 0.6)
+            paragraph("Het grote getal is het aandeel groene stroom in Nederland op het gekozen moment. Tik op de tijdlijn of sleep eroverheen om andere uren te bekijken, en kies Maand of Jaar om uit te zoomen.")
+            paragraph("Data van ned.nl, het platform van de Nederlandse netbeheerders. De duiding wordt automatisch geschreven door een taalmodel.", opacity: increased ? 0.92 : 0.6)
 
             HStack(spacing: 16) {
                 Link("Privacybeleid", destination: AppConfig.privacyURL)
                 Link("Ondersteuning", destination: AppConfig.supportURL)
             }
             .font(.system(size: smallSize))
-            .foregroundStyle(.white.opacity(0.75))
+            .foregroundStyle(.white.opacity(increased ? 0.95 : 0.75))
             .underline()
 
             Text("Renko Steenbeek")
                 .font(.system(size: smallSize, weight: .light))
-                .foregroundStyle(.white.opacity(0.4))
+                .foregroundStyle(.white.opacity(increased ? 0.85 : 0.4))
         }
         .padding(.horizontal, 28)
         .padding(.top, 32)
         .padding(.bottom, 40)
         .frame(maxWidth: .infinity, minHeight: minHeight, alignment: .topLeading)
-        .background(CardGradient(top: Color(hex: 0x2A2926), bottom: Color(hex: 0x1A1A19)))
+        .background(CardGradient.neutral)
         .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
         .overlay(alignment: .topTrailing) {
             Button(action: onClose) {
@@ -221,11 +204,11 @@ private struct HeroBack: View {
         }
     }
 
-    private func paragraph(_ text: String, opacity: Double = 0.85) -> some View {
+    private func paragraph(_ text: String, opacity: Double? = nil) -> some View {
         Text(text)
             .font(.system(size: bodySize, weight: .light))
             .lineSpacing(bodySize * 0.4)
-            .foregroundStyle(.white.opacity(opacity))
+            .foregroundStyle(.white.opacity(opacity ?? (increased ? 0.95 : 0.85)))
             .fixedSize(horizontal: false, vertical: true)
     }
 }

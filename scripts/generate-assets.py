@@ -61,6 +61,27 @@ def generate_icon(size, output_path):
     print(f"  {output_path} ({size}x{size})")
 
 
+def bolt_mask(size):
+    mask = Image.new("L", (size, size), 0)
+    draw_bolt(ImageDraw.Draw(mask), size * 0.48, size * 0.48, size * 0.9, 255)
+    return mask
+
+
+def generate_dark_icon(size, output_path):
+    img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    fill = radial_gradient(size, GREEN_LIGHT, GREEN_MID, cx=0.35, cy=0.2).convert("RGBA")
+    img.paste(fill, (0, 0), bolt_mask(size))
+    img.save(output_path, "PNG")
+    print(f"  {output_path} ({size}x{size})")
+
+
+def generate_tinted_icon(size, output_path):
+    img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    img.paste(Image.new("RGBA", (size, size), (255, 255, 255, 255)), (0, 0), bolt_mask(size))
+    img.save(output_path, "PNG")
+    print(f"  {output_path} ({size}x{size})")
+
+
 def generate_splash(size, output_path, dark=False):
     bg = (10, 10, 10) if dark else BG
     accent = GREEN_MID
@@ -108,20 +129,31 @@ def generate_splash(size, output_path, dark=False):
     print(f"  {output_path} ({size}x{size})")
 
 
-print("Generating app icon...")
-ios_icon_dir = os.path.join(ROOT, "ios/Stroompeil/Resources/Assets.xcassets/AppIcon.appiconset")
-generate_icon(1024, os.path.join(ios_icon_dir, "AppIcon.png"))
+def generate_ios_icon_variants(icon_dir):
+    generate_dark_icon(1024, os.path.join(icon_dir, "AppIcon-Dark.png"))
+    generate_tinted_icon(1024, os.path.join(icon_dir, "AppIcon-Tinted.png"))
 
-android_icon_dir = os.path.join(ROOT, "android/app/src/main/res")
-for dpi, size in [("mdpi", 48), ("hdpi", 72), ("xhdpi", 96), ("xxhdpi", 144), ("xxxhdpi", 192)]:
-    d = os.path.join(android_icon_dir, f"mipmap-{dpi}")
-    os.makedirs(d, exist_ok=True)
-    generate_icon(size, os.path.join(d, "ic_launcher.png"))
-    generate_icon(int(size * 1.5), os.path.join(d, "ic_launcher_foreground.png"))
 
-print("\nGenerating splash screens...")
-android_splash_dir = os.path.join(android_icon_dir, "drawable")
-os.makedirs(android_splash_dir, exist_ok=True)
-generate_splash(2732, os.path.join(android_splash_dir, "splash.png"))
+def main():
+    print("Generating app icon...")
+    ios_icon_dir = os.path.join(ROOT, "ios/Stroompeil/Resources/Assets.xcassets/AppIcon.appiconset")
+    generate_icon(1024, os.path.join(ios_icon_dir, "AppIcon.png"))
+    generate_ios_icon_variants(ios_icon_dir)
 
-print("\nDone!")
+    android_icon_dir = os.path.join(ROOT, "android/app/src/main/res")
+    for dpi, size in [("mdpi", 48), ("hdpi", 72), ("xhdpi", 96), ("xxhdpi", 144), ("xxxhdpi", 192)]:
+        d = os.path.join(android_icon_dir, f"mipmap-{dpi}")
+        os.makedirs(d, exist_ok=True)
+        generate_icon(size, os.path.join(d, "ic_launcher.png"))
+        generate_icon(int(size * 1.5), os.path.join(d, "ic_launcher_foreground.png"))
+
+    print("\nGenerating splash screens...")
+    android_splash_dir = os.path.join(android_icon_dir, "drawable")
+    os.makedirs(android_splash_dir, exist_ok=True)
+    generate_splash(2732, os.path.join(android_splash_dir, "splash.png"))
+
+    print("\nDone!")
+
+
+if __name__ == "__main__":
+    main()

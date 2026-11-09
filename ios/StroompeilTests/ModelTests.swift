@@ -33,11 +33,11 @@ struct ModelTests {
     @Test func decodesLiveMixResponse() throws {
         let mix = try JSONDecoder.stroompeil.decode(MixResponse.self, from: Data(mixJSON.utf8)).mix
         #expect(mix.focusTime == ISODate.parse("2026-11-09T14:00:00Z"))
-        #expect(mix.roundedGreenPct == 34)
+        #expect(Snapshot(mix: mix).roundedGreenPct == 34)
         #expect(mix.sources.count == 4)
         #expect(mix.sources[1].category == .grijs)
         #expect(mix.sources[3].category == .grijs)
-        #expect(mix.hasData)
+        #expect(Snapshot(mix: mix).hasData)
     }
 
     @Test func decodesTimelineWithAndWithoutForecastFieldAndFractionalSeconds() throws {
@@ -80,7 +80,23 @@ struct ModelTests {
 
     @Test func emptyMixHasNoData() {
         let mix = Mix(focusTime: .now, greenPct: 0, totalKWh: 0, sources: [])
-        #expect(mix.hasData == false)
+        #expect(Snapshot(mix: mix).hasData == false)
+    }
+
+    @Test func snapshotTextDependsOnSpan() throws {
+        let now = try #require(ISODate.parse("2026-11-09T14:20:00Z"))
+        let mix = Mix(focusTime: now.flooredToHour, greenPct: 40, totalKWh: 15_000_000, sources: [])
+        let hour = Snapshot(mix: mix)
+        #expect(hour.usage(now: now) == "\(DutchFormat.gigawattHours(15_000_000)) verbruik")
+        #expect(hour.isProvisional(now: now) == false)
+
+        let today = DutchFormat.startOfDay(now)
+        let point = DayPoint(day: today, totalKWh: 300_000_000, greenPct: 40, volumes: [])
+        let day = Snapshot(day: point, sources: [])
+        #expect(day.isProvisional(now: now))
+        #expect(day.usage(now: now).hasSuffix("voorlopig"))
+        #expect(day.usage(now: now, spoken: true).contains("gigawattuur"))
+        #expect(day.missingDataMessage.contains("deze dag"))
     }
 
     @Test func rejectsGarbageDates() {

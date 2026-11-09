@@ -16,13 +16,13 @@ struct StroompeilWidgetView: View {
     @ViewBuilder
     private var content: some View {
         switch entry.content {
-        case .mix(let mix):
+        case .snapshot(let snapshot):
             switch family {
-            case .systemMedium: MediumWidgetView(mix: mix)
-            case .accessoryCircular: CircularWidgetView(mix: mix)
-            case .accessoryRectangular: RectangularWidgetView(mix: mix)
-            case .accessoryInline: InlineWidgetView(mix: mix)
-            default: SmallWidgetView(mix: mix)
+            case .systemMedium: MediumWidgetView(snapshot: snapshot)
+            case .accessoryCircular: CircularWidgetView(snapshot: snapshot)
+            case .accessoryRectangular: RectangularWidgetView(snapshot: snapshot)
+            case .accessoryInline: InlineWidgetView(snapshot: snapshot)
+            default: SmallWidgetView(snapshot: snapshot)
             }
         case .unavailable:
             UnavailableWidgetView(family: family)
@@ -40,17 +40,20 @@ private extension WidgetFamily {
 }
 
 private struct HeadlineBlock: View {
-    let mix: Mix
+    let snapshot: Snapshot
+
+    @Environment(\.colorSchemeContrast) private var contrast
+    private var increased: Bool { contrast == .increased }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(verbatim: DutchFormat.clock(mix.focusTime))
+            Text(verbatim: DutchFormat.clock(snapshot.date))
                 .font(.system(size: 11, weight: .medium))
                 .tracking(1)
-                .foregroundStyle(.white.opacity(0.6))
+                .foregroundStyle(.white.opacity(increased ? 0.92 : 0.6))
             Spacer(minLength: 0)
             HStack(alignment: .firstTextBaseline, spacing: 2) {
-                Text(verbatim: "\(mix.roundedGreenPct)")
+                Text(verbatim: "\(snapshot.roundedGreenPct)")
                     .font(.system(size: 56, weight: .semibold))
                     .tracking(-2)
                     .monospacedDigit()
@@ -64,13 +67,13 @@ private struct HeadlineBlock: View {
             Text("duurzaam")
                 .font(.system(size: 17, weight: .light))
                 .opacity(0.95)
-            if mix.totalKWh > 0 {
-                Text(verbatim: "\(DutchFormat.gigawattHours(mix.totalKWh)) verbruik")
+            if snapshot.totalKWh > 0 {
+                Text(verbatim: "\(DutchFormat.gigawattHours(snapshot.totalKWh)) verbruik")
                     .font(.system(size: 12, weight: .light))
                     .monospacedDigit()
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
-                    .opacity(0.5)
+                    .opacity(increased ? 0.9 : 0.5)
             }
         }
         .foregroundStyle(.white)
@@ -80,34 +83,34 @@ private struct HeadlineBlock: View {
     }
 
     private var accessibilityText: String {
-        var text = "\(mix.roundedGreenPct) procent duurzame stroom om \(DutchFormat.clock(mix.focusTime))"
-        if mix.totalKWh > 0 {
-            text += ", \(DutchFormat.gigawattHoursSpoken(mix.totalKWh)) verbruik"
+        var text = "\(DutchFormat.percentSpoken(snapshot.greenPct)) duurzame stroom om \(DutchFormat.clock(snapshot.date))"
+        if snapshot.totalKWh > 0 {
+            text += ", \(DutchFormat.gigawattHoursSpoken(snapshot.totalKWh)) verbruik"
         }
         return text
     }
 }
 
 private struct SmallWidgetView: View {
-    let mix: Mix
+    let snapshot: Snapshot
 
     var body: some View {
-        HeadlineBlock(mix: mix)
+        HeadlineBlock(snapshot: snapshot)
             .containerBackground(for: .widget) {
-                CardGradient(band: GreenBand(percentage: mix.greenPct))
+                CardGradient(band: GreenBand(percentage: snapshot.greenPct))
             }
     }
 }
 
 private struct MediumWidgetView: View {
-    let mix: Mix
+    let snapshot: Snapshot
 
     var body: some View {
         HStack(spacing: 16) {
-            HeadlineBlock(mix: mix)
+            HeadlineBlock(snapshot: snapshot)
             VStack(alignment: .leading, spacing: 10) {
                 Spacer(minLength: 0)
-                ForEach(mix.sources.prefix(3)) { source in
+                ForEach(snapshot.sources.prefix(3)) { source in
                     HStack(spacing: 8) {
                         Circle()
                             .fill(source.color)
@@ -122,49 +125,49 @@ private struct MediumWidgetView: View {
                             .monospacedDigit()
                     }
                     .accessibilityElement(children: .ignore)
-                    .accessibilityLabel("\(source.label), \(Int(source.percentage.rounded())) procent")
+                    .accessibilityLabel("\(source.label), \(DutchFormat.percentSpoken(source.percentage))")
                 }
             }
             .foregroundStyle(.white)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         }
         .containerBackground(for: .widget) {
-            CardGradient(band: GreenBand(percentage: mix.greenPct))
+            CardGradient(band: GreenBand(percentage: snapshot.greenPct))
         }
     }
 }
 
 private struct CircularWidgetView: View {
-    let mix: Mix
+    let snapshot: Snapshot
 
     var body: some View {
-        Gauge(value: min(max(mix.greenPct, 0), 100), in: 0...100) {
+        Gauge(value: min(max(snapshot.greenPct, 0), 100), in: 0...100) {
             Text("Groen")
         } currentValueLabel: {
-            Text(verbatim: "\(mix.roundedGreenPct)")
+            Text(verbatim: "\(snapshot.roundedGreenPct)")
                 .monospacedDigit()
         }
         .gaugeStyle(.accessoryCircularCapacity)
         .widgetAccentable()
-        .accessibilityLabel("\(mix.roundedGreenPct) procent duurzame stroom")
+        .accessibilityLabel("\(DutchFormat.percentSpoken(snapshot.greenPct)) duurzame stroom")
         .containerBackground(for: .widget) { Color.clear }
     }
 }
 
 private struct RectangularWidgetView: View {
-    let mix: Mix
+    let snapshot: Snapshot
 
     var body: some View {
         VStack(alignment: .leading, spacing: 1) {
-            Text(verbatim: "\(mix.roundedGreenPct)% duurzaam")
+            Text(verbatim: "\(snapshot.roundedGreenPct)% duurzaam")
                 .font(.headline)
                 .monospacedDigit()
                 .widgetAccentable()
-            Text(verbatim: mix.sources.prefix(2).map { "\($0.label) \(DutchFormat.percent($0.percentage))" }.joined(separator: " · "))
+            Text(verbatim: snapshot.sources.prefix(2).map { "\($0.label) \(DutchFormat.percent($0.percentage))" }.joined(separator: " · "))
                 .font(.caption)
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
-            Text(verbatim: "Stroompeil · \(DutchFormat.clock(mix.focusTime))")
+            Text(verbatim: "Stroompeil · \(DutchFormat.clock(snapshot.date))")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
         }
@@ -174,10 +177,10 @@ private struct RectangularWidgetView: View {
 }
 
 private struct InlineWidgetView: View {
-    let mix: Mix
+    let snapshot: Snapshot
 
     var body: some View {
-        Text(verbatim: "\(mix.roundedGreenPct)% groene stroom")
+        Text(verbatim: "\(snapshot.roundedGreenPct)% groene stroom")
             .containerBackground(for: .widget) { Color.clear }
     }
 }
@@ -221,7 +224,7 @@ private struct UnavailableWidgetView: View {
             .foregroundStyle(.white)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
             .containerBackground(for: .widget) {
-                CardGradient(top: Color(hex: 0x2A2926), bottom: Color(hex: 0x1A1A19))
+                CardGradient.neutral
             }
         }
     }

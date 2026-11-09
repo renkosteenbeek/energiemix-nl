@@ -157,10 +157,10 @@ struct DashboardModelTests {
         let clock = TestClock(start)
         let model = makeModel(source: source, clock: clock)
         model.start()
-        await eventually { model.displayedMix != nil && model.storyPhase == .ready }
+        await eventually { model.displayedMix != nil && model.story.phase == .ready }
 
         #expect(model.displayedMix?.hour == start.flooredToHour)
-        #expect(model.story == "Het waait flink.")
+        #expect(model.story.text == "Het waait flink.")
         #expect(model.isAtNow)
         #expect(model.mixError == nil)
     }
@@ -195,11 +195,11 @@ struct DashboardModelTests {
         source.failure = .offline
         let model = makeModel(source: source, clock: TestClock(start))
         model.start()
-        await eventually { model.mixError != nil && model.storyPhase == .unavailable }
+        await eventually { model.mixError != nil && model.story.phase == .unavailable }
 
         #expect(model.displayedMix == nil)
         #expect(model.mixError == "Geen internetverbinding.")
-        #expect(model.storyPhase == .unavailable)
+        #expect(model.story.phase == .unavailable)
 
         source.failure = nil
         model.retry()
@@ -241,11 +241,11 @@ struct DashboardModelTests {
         model.start()
         let earlier = model.nowHour.addingHours(-10)
         model.select(earlier)
-        await eventually { model.displayedMix?.hour == earlier && model.storyPhase == .ready }
+        await eventually { model.displayedMix?.hour == earlier && model.story.phase == .ready }
 
         clock.advance(hours: 1)
         model.clockTick()
-        #expect(model.storyPhase == .ready)
+        #expect(model.story.phase == .ready)
         #expect(model.isLoadingMix == false)
         #expect(source.requestedHours.filter { $0 == earlier }.count == 1)
     }
@@ -257,7 +257,7 @@ struct DashboardModelTests {
         model.start()
         await eventually { model.displayedMix != nil }
         #expect(model.displayedMix?.hour == model.nowHour)
-        #expect(model.displayedMix?.hasData == false)
+        #expect(model.snapshot?.hasData == false)
     }
 
     @Test func failedTimelineCanBeRetried() async {
@@ -265,13 +265,13 @@ struct DashboardModelTests {
         source.timelineFailure = .server(status: 502)
         let model = makeModel(source: source, clock: TestClock(start))
         model.start()
-        await eventually { model.timelineFailed }
-        #expect(model.timelineByHour.isEmpty)
+        await eventually { model.hourly.failed }
+        #expect(model.hourly.points.isEmpty)
 
         source.timelineFailure = nil
-        model.retryTimeline()
-        await eventually { !model.timelineFailed }
-        #expect(model.timelineByHour.count == 1)
+        model.hourly.loadRecent(reload: true)
+        await eventually { !model.hourly.failed }
+        #expect(model.hourly.points.count == 1)
     }
 
     @Test func failedStoryCanBeRetried() async {
@@ -279,13 +279,13 @@ struct DashboardModelTests {
         source.storyFailure = .timeout
         let model = makeModel(source: source, clock: TestClock(start))
         model.start()
-        await eventually { model.storyPhase == .unavailable }
-        #expect(model.story.isEmpty)
+        await eventually { model.story.phase == .unavailable }
+        #expect(model.story.text.isEmpty)
 
         source.storyFailure = nil
-        model.retryStory()
-        await eventually { model.storyPhase == .ready }
-        #expect(model.story == "Het waait flink.")
+        model.story.retry()
+        await eventually { model.story.phase == .ready }
+        #expect(model.story.text == "Het waait flink.")
     }
 
     @Test func returningToForegroundRecoversFromErrors() async {
@@ -293,11 +293,11 @@ struct DashboardModelTests {
         source.failure = .offline
         let model = makeModel(source: source, clock: TestClock(start))
         model.start()
-        await eventually { model.mixError != nil && model.timelineFailed }
+        await eventually { model.mixError != nil && model.hourly.failed }
 
         source.failure = nil
         model.sceneBecameActive()
-        await eventually { model.displayedMix != nil && !model.timelineFailed && model.storyPhase == .ready }
+        await eventually { model.displayedMix != nil && !model.hourly.failed && model.story.phase == .ready }
         #expect(model.mixError == nil)
     }
 
@@ -311,9 +311,9 @@ struct DashboardModelTests {
         model.zoom(to: .month)
         #expect(model.scale == .month)
         #expect(model.focusDay == DutchFormat.startOfDay(earlier))
-        await eventually { model.snapshot?.span == .day && model.storyPhase == .ready }
+        await eventually { model.snapshot?.span == .day && model.story.phase == .ready }
         #expect(model.snapshot?.date == model.focusDay)
-        #expect(model.story == "Dag \(DutchFormat.isoDay(model.focusDay)).")
+        #expect(model.story.text == "Dag \(DutchFormat.isoDay(model.focusDay)).")
         #expect(model.periodStats != nil)
     }
 
@@ -351,7 +351,7 @@ struct DashboardModelTests {
         #expect(model.window.index(of: model.focusHour) != nil)
         await eventually { !source.rangeRequests.isEmpty && model.displayedMix?.hour == model.focusHour }
         #expect(source.rangeRequests.first?.contains(model.focusHour) == true)
-        #expect(model.timelineByHour[model.focusHour] != nil)
+        #expect(model.hourly.points[model.focusHour] != nil)
     }
 
     @Test func periodNavigationStepsByMonthAndYear() async {
@@ -416,6 +416,64 @@ struct DashboardModelTests {
         await eventually { model.displayedMix?.hour == fastHour }
         try? await Task.sleep(for: .milliseconds(400))
         #expect(model.displayedMix?.hour == fastHour)
+    }
+
+    @Test func deepLinkFromPeriodViewReturnsToCurrentHour() async {
+        let model = makeModel(source: StubSource(), clock: TestClock(start))
+        model.start()
+        model.zoom(to: .year)
+        model.selectDay(DutchFormat.day(fromISO: "2026-03-14")!)
+
+        model.showNow()
+        #expect(model.scale == .day)
+        #expect(model.focusHour == model.nowHour)
+        #expect(model.windowOffset == 0)
+        #expect(model.isAtNow)
+    }
+
+    @Test func periodStatsLeaveOutTheProvisionalToday() async {
+        let model = makeModel(source: StubSource(), clock: TestClock(start))
+        model.start()
+        model.zoom(to: .month)
+        await eventually { !model.periodDays.isEmpty }
+
+        #expect(model.periodDays.contains { $0.day == model.today })
+        let stats = model.periodStats
+        #expect(stats != nil)
+        #expect(stats?.greenest.day != model.today)
+        #expect(stats?.greyest.day != model.today)
+    }
+
+    @Test func zoomingInNearTheFirstDayStaysWithinAvailableData() async {
+        let model = makeModel(source: StubSource(), clock: TestClock(start))
+        model.start()
+        model.zoom(to: .year)
+        model.selectDay(PeriodWindow.earliestDay)
+
+        model.zoom(to: .day)
+        #expect(model.focusHour >= PeriodWindow.earliestDay)
+        #expect(model.window.index(of: model.focusHour) != nil)
+        #expect(model.windowOffset == model.window.earliestOffset(earliest: PeriodWindow.earliestDay))
+        #expect(model.canPanBack == false)
+
+        model.select(PeriodWindow.earliestDay.addingHours(-6))
+        #expect(model.focusHour == PeriodWindow.earliestDay)
+    }
+
+    @Test func revisitingALoadedRangeDoesNotFetchItAgain() async {
+        let source = StubSource()
+        let model = makeModel(source: source, clock: TestClock(start))
+        model.start()
+        model.zoom(to: .year)
+        model.selectDay(DutchFormat.day(fromISO: "2026-06-03")!)
+        model.zoom(to: .day)
+        await eventually { !source.rangeRequests.isEmpty }
+        try? await Task.sleep(for: .milliseconds(50))
+
+        model.zoom(to: .month)
+        model.zoom(to: .day)
+        try? await Task.sleep(for: .milliseconds(50))
+        #expect(source.rangeRequests.count == 1)
     }
 
     @Test func widgetsReloadOncePerHour() async {

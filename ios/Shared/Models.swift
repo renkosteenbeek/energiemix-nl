@@ -26,9 +26,7 @@ struct Mix: Codable, Sendable, Equatable {
     let totalKWh: Double
     let sources: [SourceSlice]
 
-    var hasData: Bool { totalKWh > 0 && !sources.isEmpty }
     var hour: Date { focusTime.flooredToHour }
-    var roundedGreenPct: Int { Int(greenPct.rounded()) }
 }
 
 struct MixResponse: Decodable, Sendable {
