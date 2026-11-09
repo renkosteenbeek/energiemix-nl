@@ -54,6 +54,30 @@ struct ModelTests {
         #expect(decoded == mix)
     }
 
+    @Test func decodesYearAndBuildsDaySnapshot() throws {
+        let json = """
+        {
+          "year": 2026,
+          "sources": [
+            { "typeId": 2, "label": "Zon", "category": "groen" },
+            { "typeId": 18, "label": "Aardgas", "category": "grijs" },
+            { "typeId": 20, "label": "Kernenergie", "category": "grijs" }
+          ],
+          "days": [
+            { "date": "2026-04-29", "totalKWh": 400, "greenPct": 75, "volumes": [300, 100, 0] }
+          ]
+        }
+        """
+        let year = try JSONDecoder.stroompeil.decode(YearData.self, from: Data(json.utf8))
+        #expect(year.days.first?.day == DutchFormat.day(fromISO: "2026-04-29"))
+        let snapshot = Snapshot(day: try #require(year.days.first), sources: year.sources)
+        #expect(snapshot.span == .day)
+        #expect(snapshot.roundedGreenPct == 75)
+        #expect(snapshot.sources.map(\.label) == ["Zon", "Aardgas"])
+        #expect(snapshot.sources.first?.percentage == 75)
+        #expect(snapshot.hasData)
+    }
+
     @Test func emptyMixHasNoData() {
         let mix = Mix(focusTime: .now, greenPct: 0, totalKWh: 0, sources: [])
         #expect(mix.hasData == false)

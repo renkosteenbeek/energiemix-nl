@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct HeroCard: View {
-    let mix: Mix
+    let snapshot: Snapshot
     let nowHour: Date
     let isLoading: Bool
     let screenWidth: CGFloat
@@ -14,7 +14,7 @@ struct HeroCard: View {
     var body: some View {
         FlipCard(isFlipped: isFlipped, reduceMotion: reduceMotion) {
             HeroFront(
-                mix: mix,
+                snapshot: snapshot,
                 nowHour: nowHour,
                 isLoading: isLoading,
                 screenWidth: screenWidth,
@@ -42,7 +42,7 @@ private enum HeroFace: Hashable {
 }
 
 private struct HeroFront: View {
-    let mix: Mix
+    let snapshot: Snapshot
     let nowHour: Date
     let isLoading: Bool
     let screenWidth: CGFloat
@@ -54,12 +54,37 @@ private struct HeroFront: View {
 
     private var numberSize: CGFloat { min(max(screenWidth * 0.32, 96), 208) }
     private var percentSize: CGFloat { min(max(screenWidth * 0.07, 32), 56) }
-    private var band: GreenBand { GreenBand(percentage: mix.greenPct) }
-    private var relative: String { DutchFormat.relative(hour: mix.focusTime, now: nowHour) }
+    private var band: GreenBand { GreenBand(percentage: snapshot.greenPct) }
+
+    private var isPreliminaryDay: Bool {
+        snapshot.span == .day && snapshot.date == DutchFormat.startOfDay(nowHour)
+    }
+
+    private var title: String {
+        switch snapshot.span {
+        case .hour: DutchFormat.long(snapshot.date)
+        case .day: DutchFormat.dayLong(snapshot.date, now: nowHour)
+        }
+    }
+
+    private var relative: String {
+        switch snapshot.span {
+        case .hour: DutchFormat.relative(hour: snapshot.date, now: nowHour)
+        case .day: DutchFormat.dayRelative(snapshot.date, now: nowHour)
+        }
+    }
+
+    private var usage: String {
+        let amount = DutchFormat.gigawattHours(snapshot.totalKWh)
+        switch snapshot.span {
+        case .hour: return "\(amount) verbruik"
+        case .day: return isPreliminaryDay ? "\(amount) verbruik · voorlopig" : "\(amount) verbruik op deze dag"
+        }
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            MicroLabel(text: DutchFormat.long(mix.focusTime), baseSize: 11, trackingRatio: 0.2)
+            MicroLabel(text: title, baseSize: 11, trackingRatio: 0.2)
                 .foregroundStyle(.white.opacity(0.7))
                 .lineLimit(3)
                 .fixedSize(horizontal: false, vertical: true)
@@ -67,12 +92,12 @@ private struct HeroFront: View {
                 .padding(.trailing, 40)
 
             HStack(alignment: .firstTextBaseline, spacing: 4) {
-                Text(verbatim: "\(mix.roundedGreenPct)")
+                Text(verbatim: "\(snapshot.roundedGreenPct)")
                     .font(.system(size: numberSize, weight: .semibold))
                     .tracking(-numberSize * 0.05)
                     .monospacedDigit()
                     .foregroundStyle(.white)
-                    .contentTransition(.numericText(value: Double(mix.roundedGreenPct)))
+                    .contentTransition(.numericText(value: Double(snapshot.roundedGreenPct)))
                     .lineLimit(1)
                     .minimumScaleFactor(0.5)
                 Text(verbatim: "%")
@@ -88,8 +113,8 @@ private struct HeroFront: View {
                 .foregroundStyle(.white.opacity(0.95))
                 .padding(.top, 4)
 
-            if mix.totalKWh > 0 {
-                Text(verbatim: "\(DutchFormat.gigawattHours(mix.totalKWh)) verbruik")
+            if snapshot.totalKWh > 0 {
+                Text(verbatim: usage)
                     .font(.system(size: usageSize, weight: .light))
                     .monospacedDigit()
                     .foregroundStyle(.white.opacity(0.5))
@@ -131,12 +156,12 @@ private struct HeroFront: View {
 
     private var accessibilityText: String {
         var parts = [
-            "\(mix.roundedGreenPct) procent duurzame stroom",
+            "\(snapshot.roundedGreenPct) procent duurzame stroom",
             relative,
-            DutchFormat.long(mix.focusTime),
+            title,
         ]
-        if mix.totalKWh > 0 {
-            parts.append("\(DutchFormat.gigawattHoursSpoken(mix.totalKWh)) verbruik")
+        if snapshot.totalKWh > 0 {
+            parts.append(usage.replacingOccurrences(of: "GWh", with: "gigawattuur"))
         }
         return parts.joined(separator: ", ")
     }

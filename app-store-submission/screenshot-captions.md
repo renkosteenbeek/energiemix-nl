@@ -19,3 +19,6 @@ Optionele bijschriften bij de screenshots. Kort en krachtig.
 
 ## 6: `06-dashboard-dark.png`
 **Caption:** Ook in donkere modus
+
+## 7: `07-jaaroverzicht.png`
+**Caption:** Zoom uit naar een heel jaar

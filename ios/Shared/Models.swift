@@ -35,6 +35,96 @@ struct MixResponse: Decodable, Sendable {
     let mix: Mix
 }
 
+struct SourceMeta: Decodable, Sendable, Equatable {
+    let typeId: Int
+    let label: String
+    let category: SourceCategory
+}
+
+struct DayPoint: Sendable, Equatable {
+    let day: Date
+    let totalKWh: Double
+    let greenPct: Double
+    let volumes: [Double]
+}
+
+struct YearData: Decodable, Sendable, Equatable {
+    let year: Int
+    let sources: [SourceMeta]
+    let days: [DayPoint]
+
+    private enum CodingKeys: String, CodingKey { case year, sources, days }
+
+    private struct RawDay: Decodable {
+        let date: String
+        let totalKWh: Double
+        let greenPct: Double
+        let volumes: [Double]
+    }
+
+    init(year: Int, sources: [SourceMeta], days: [DayPoint]) {
+        self.year = year
+        self.sources = sources
+        self.days = days
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        year = try container.decode(Int.self, forKey: .year)
+        sources = try container.decode([SourceMeta].self, forKey: .sources)
+        let raw = try container.decode([RawDay].self, forKey: .days)
+        days = try raw.map { item in
+            guard let day = DutchFormat.day(fromISO: item.date) else {
+                throw DecodingError.dataCorruptedError(forKey: .days, in: container, debugDescription: "Ongeldige dag: \(item.date)")
+            }
+            return DayPoint(day: day, totalKWh: item.totalKWh, greenPct: item.greenPct, volumes: item.volumes)
+        }
+    }
+}
+
+struct Snapshot: Sendable, Equatable {
+    enum Span: Sendable, Equatable {
+        case hour
+        case day
+    }
+
+    let span: Span
+    let date: Date
+    let greenPct: Double
+    let totalKWh: Double
+    let sources: [SourceSlice]
+
+    var hasData: Bool { totalKWh > 0 && !sources.isEmpty }
+    var roundedGreenPct: Int { Int(greenPct.rounded()) }
+
+    init(mix: Mix) {
+        span = .hour
+        date = mix.focusTime
+        greenPct = mix.greenPct
+        totalKWh = mix.totalKWh
+        sources = mix.sources
+    }
+
+    init(day point: DayPoint, sources meta: [SourceMeta]) {
+        span = .day
+        date = point.day
+        greenPct = point.greenPct
+        totalKWh = point.totalKWh
+        sources = zip(meta, point.volumes)
+            .filter { $0.1 > 0 }
+            .map { meta, volume in
+                SourceSlice(
+                    typeId: meta.typeId,
+                    label: meta.label,
+                    category: meta.category,
+                    volumeKWh: volume,
+                    percentage: point.totalKWh > 0 ? volume / point.totalKWh * 100 : 0
+                )
+            }
+            .sorted { $0.volumeKWh > $1.volumeKWh }
+    }
+}
+
 struct TimePoint: Decodable, Sendable, Equatable {
     let time: Date
     let greenPct: Double

@@ -26,6 +26,8 @@ final class StubSource: EnergyDataSource, @unchecked Sendable {
     private var _storyFailure: APIError?
     private var _mixHourShift = 0
     private var _requestedHours: [Date] = []
+    private var _rangeRequests: [ClosedRange<Date>] = []
+    private var _requestedYears: [Int] = []
     private var _delays: [Date: Duration] = [:]
     let storyText: String
 
@@ -54,6 +56,8 @@ final class StubSource: EnergyDataSource, @unchecked Sendable {
     }
 
     var requestedHours: [Date] { lock.withLock { _requestedHours } }
+    var rangeRequests: [ClosedRange<Date>] { lock.withLock { _rangeRequests } }
+    var requestedYears: [Int] { lock.withLock { _requestedYears } }
 
     func setDelay(_ delay: Duration, for hour: Date) {
         lock.withLock { _delays[hour] = delay }
@@ -77,6 +81,46 @@ final class StubSource: EnergyDataSource, @unchecked Sendable {
     func timeline(reload: Bool) async throws -> [TimePoint] {
         if let failure = timelineFailure ?? failure { throw failure }
         return [TimePoint(time: Date().flooredToHour, greenPct: 40, totalKWh: 15_000_000)]
+    }
+
+    func timeline(from: Date, to: Date) async throws -> [TimePoint] {
+        lock.withLock { _rangeRequests.append(from...to) }
+        return stride(from: 0, through: from.hours(until: to), by: 1).map {
+            TimePoint(time: from.addingHours($0), greenPct: 55, totalKWh: 14_000_000)
+        }
+    }
+
+    func year(_ year: Int, reload: Bool) async throws -> YearData {
+        lock.withLock { _requestedYears.append(year) }
+        if let failure { throw failure }
+        let calendar = DutchFormat.calendar
+        let start = calendar.date(from: DateComponents(year: year, month: 1, day: 1))!
+        let count = calendar.range(of: .day, in: .year, for: start)!.count
+        let days = (0..<count).map { offset -> DayPoint in
+            let green = Double(20 + offset % 60)
+            return DayPoint(
+                day: DutchFormat.addingDays(offset, to: start),
+                totalKWh: 300_000_000,
+                greenPct: green,
+                volumes: [green * 3_000_000, (100 - green) * 3_000_000]
+            )
+        }
+        return YearData(
+            year: year,
+            sources: [
+                SourceMeta(typeId: 2, label: "Zon", category: .groen),
+                SourceMeta(typeId: 18, label: "Aardgas", category: .grijs),
+            ],
+            days: days
+        )
+    }
+
+    func dayStory(_ day: Date, reload: Bool) -> AsyncThrowingStream<String, Error> {
+        let label = DutchFormat.isoDay(day)
+        return AsyncThrowingStream { continuation in
+            continuation.yield("Dag \(label).")
+            continuation.finish()
+        }
     }
 
     func story(at hour: Date, reload: Bool) -> AsyncThrowingStream<String, Error> {
@@ -222,12 +266,12 @@ struct DashboardModelTests {
         let model = makeModel(source: source, clock: TestClock(start))
         model.start()
         await eventually { model.timelineFailed }
-        #expect(model.timeline.isEmpty)
+        #expect(model.timelineByHour.isEmpty)
 
         source.timelineFailure = nil
         model.retryTimeline()
         await eventually { !model.timelineFailed }
-        #expect(model.timeline.count == 1)
+        #expect(model.timelineByHour.count == 1)
     }
 
     @Test func failedStoryCanBeRetried() async {
@@ -255,6 +299,90 @@ struct DashboardModelTests {
         model.sceneBecameActive()
         await eventually { model.displayedMix != nil && !model.timelineFailed && model.storyPhase == .ready }
         #expect(model.mixError == nil)
+    }
+
+    @Test func zoomingOutSelectsTheDayOfTheFocusedHour() async {
+        let source = StubSource()
+        let model = makeModel(source: source, clock: TestClock(start))
+        model.start()
+        let earlier = model.nowHour.addingHours(-30)
+        model.select(earlier)
+
+        model.zoom(to: .month)
+        #expect(model.scale == .month)
+        #expect(model.focusDay == DutchFormat.startOfDay(earlier))
+        await eventually { model.snapshot?.span == .day && model.storyPhase == .ready }
+        #expect(model.snapshot?.date == model.focusDay)
+        #expect(model.story == "Dag \(DutchFormat.isoDay(model.focusDay)).")
+        #expect(model.periodStats != nil)
+    }
+
+    @Test func selectingDaysUsesLoadedYearWithoutExtraRequests() async {
+        let source = StubSource()
+        let model = makeModel(source: source, clock: TestClock(start))
+        model.start()
+        model.zoom(to: .year)
+        await eventually { model.snapshot != nil }
+        let mixRequests = source.requestedHours.count
+        let yearRequests = source.requestedYears.count
+
+        let day = DutchFormat.day(fromISO: "2026-04-29")!
+        model.selectDay(day)
+        #expect(model.snapshot?.date == day)
+        #expect(model.snapshot?.sources.first?.label == "Aardgas" || model.snapshot?.sources.first?.label == "Zon")
+        #expect(source.requestedHours.count == mixRequests)
+        #expect(source.requestedYears.count == yearRequests)
+    }
+
+    @Test func zoomingInLandsOnSameHourOfTheChosenDay() async {
+        let source = StubSource()
+        let model = makeModel(source: source, clock: TestClock(start))
+        model.start()
+        let localHour = DutchFormat.amsterdamHour(model.nowHour)
+        model.zoom(to: .year)
+        let day = DutchFormat.day(fromISO: "2026-06-03")!
+        model.selectDay(day)
+
+        model.zoom(to: .day)
+        #expect(model.scale == .day)
+        #expect(DutchFormat.startOfDay(model.focusHour) == day)
+        #expect(DutchFormat.amsterdamHour(model.focusHour) == localHour)
+        #expect(model.windowOffset < 0)
+        #expect(model.window.index(of: model.focusHour) != nil)
+        await eventually { !source.rangeRequests.isEmpty && model.displayedMix?.hour == model.focusHour }
+        #expect(source.rangeRequests.first?.contains(model.focusHour) == true)
+        #expect(model.timelineByHour[model.focusHour] != nil)
+    }
+
+    @Test func periodNavigationStepsByMonthAndYear() async {
+        let model = makeModel(source: StubSource(), clock: TestClock(start))
+        model.start()
+        model.zoom(to: .month)
+        #expect(model.canPanForward == false)
+        #expect(model.isAtNow)
+
+        model.panBack()
+        #expect(model.periodWindow.title == "Oktober 2026")
+        #expect(model.focusDay == DutchFormat.day(fromISO: "2026-10-09"))
+        #expect(model.canPanForward)
+        #expect(model.isAtNow == false)
+
+        model.zoom(to: .year)
+        model.panBack()
+        #expect(model.periodWindow.title == "2025")
+        model.jumpToNow()
+        #expect(model.focusDay == model.today)
+        #expect(model.periodWindow.title == "2026")
+    }
+
+    @Test func daySelectionIsClampedToAvailableRange() async {
+        let model = makeModel(source: StubSource(), clock: TestClock(start))
+        model.start()
+        model.zoom(to: .year)
+        model.selectDay(DutchFormat.day(fromISO: "2019-05-01")!)
+        #expect(model.focusDay == PeriodWindow.earliestDay)
+        model.selectDay(DutchFormat.day(fromISO: "2027-01-01")!)
+        #expect(model.focusDay == model.today)
     }
 
     @Test func panningMovesWindowAndFocusTogether() async {

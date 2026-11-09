@@ -42,6 +42,73 @@ enum DutchFormat {
         date.formatted(clockStyle)
     }
 
+    private static let dayLongStyle = verbatim("\(weekday: .wide) \(day: .defaultDigits) \(month: .wide)")
+    private static let dayCompactStyle = verbatim("\(weekday: .abbreviated) \(day: .defaultDigits) \(month: .abbreviated)")
+    private static let monthStyle = verbatim("\(month: .wide) \(year: .defaultDigits)")
+    private static let monthShortStyle = verbatim("\(month: .abbreviated)")
+
+    static func startOfDay(_ date: Date) -> Date {
+        calendar.startOfDay(for: date)
+    }
+
+    static func addingDays(_ days: Int, to day: Date) -> Date {
+        calendar.date(byAdding: .day, value: days, to: day) ?? day
+    }
+
+    static func day(fromISO raw: String) -> Date? {
+        let parts = raw.split(separator: "-").compactMap { Int($0) }
+        guard parts.count == 3 else { return nil }
+        return calendar.date(from: DateComponents(year: parts[0], month: parts[1], day: parts[2]))
+    }
+
+    static func isoDay(_ date: Date) -> String {
+        let c = calendar.dateComponents([.year, .month, .day], from: date)
+        return String(format: "%04d-%02d-%02d", c.year ?? 0, c.month ?? 0, c.day ?? 0)
+    }
+
+    static func year(_ date: Date) -> Int {
+        calendar.component(.year, from: date)
+    }
+
+    static func dayLong(_ date: Date, now: Date) -> String {
+        let label = date.formatted(dayLongStyle)
+        return year(date) == year(now) ? label : "\(label) \(year(date))"
+    }
+
+    static func dayCompact(_ date: Date, now: Date) -> String {
+        let label = date.formatted(dayCompactStyle).replacingOccurrences(of: ".", with: "").capitalizedFirst
+        return year(date) == year(now) ? label : "\(label) \(year(date))"
+    }
+
+    static func dayShort(_ date: Date, now: Date) -> String {
+        let label = "\(calendar.component(.day, from: date)) \(monthShort(date).lowercased())"
+        return year(date) == year(now) ? label : "\(label) \(year(date))"
+    }
+
+    static func monthTitle(_ date: Date) -> String {
+        date.formatted(monthStyle).capitalizedFirst
+    }
+
+    static func monthShort(_ date: Date) -> String {
+        date.formatted(monthShortStyle).replacingOccurrences(of: ".", with: "").uppercased()
+    }
+
+    static func dayRelative(_ day: Date, now: Date) -> String {
+        let today = startOfDay(now)
+        let target = startOfDay(day)
+        let days = calendar.dateComponents([.day], from: target, to: today).day ?? 0
+        switch days {
+        case ...0: return "vandaag"
+        case 1: return "gisteren"
+        case 2..<14: return "\(days)\u{00A0}dagen geleden"
+        case 14..<63: return "\(Int((Double(days) / 7).rounded()))\u{00A0}weken geleden"
+        default:
+            let months = calendar.dateComponents([.month], from: target, to: today).month ?? 0
+            if months < 24 { return "\(max(months, 2))\u{00A0}maanden geleden" }
+            return "\(months / 12)\u{00A0}jaar geleden"
+        }
+    }
+
     static func amsterdamHour(_ date: Date) -> Int {
         calendar.component(.hour, from: date)
     }
@@ -53,8 +120,10 @@ enum DutchFormat {
         if magnitude < 36 {
             return delta < 0 ? "\(magnitude)\u{00A0}uur geleden" : "over \(magnitude)\u{00A0}uur"
         }
-        let days = Int((Double(magnitude) / 24).rounded())
-        return delta < 0 ? "\(days)\u{00A0}dagen geleden" : "over \(days)\u{00A0}dagen"
+        if delta < 0 {
+            return dayRelative(hour, now: now)
+        }
+        return "over \(Int((Double(magnitude) / 24).rounded()))\u{00A0}dagen"
     }
 
     static func gigawattHours(_ kWh: Double) -> String {

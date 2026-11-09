@@ -133,41 +133,49 @@ struct StatusCard: View {
 struct FlowLayout: Layout {
     var spacing: CGFloat = 8
 
+    private struct Row {
+        var items: [(index: Int, size: CGSize)] = []
+        var width: CGFloat = 0
+        var height: CGFloat = 0
+    }
+
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
         let maxWidth = proposal.width ?? .infinity
-        var x: CGFloat = 0
-        var y: CGFloat = 0
-        var rowHeight: CGFloat = 0
-        var widest: CGFloat = 0
-        for subview in subviews {
-            let size = fittedSize(of: subview, maxWidth: maxWidth)
-            if x > 0, x + size.width > maxWidth {
-                y += rowHeight + spacing
-                x = 0
-                rowHeight = 0
-            }
-            x += size.width + spacing
-            rowHeight = max(rowHeight, size.height)
-            widest = max(widest, x - spacing)
-        }
-        return CGSize(width: min(widest, maxWidth), height: y + rowHeight)
+        let rows = rows(for: subviews, maxWidth: maxWidth)
+        let width = rows.map(\.width).max() ?? 0
+        let height = rows.map(\.height).reduce(0, +) + spacing * CGFloat(max(rows.count - 1, 0))
+        return CGSize(width: min(width, maxWidth), height: height)
     }
 
     func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        var x = bounds.minX
         var y = bounds.minY
-        var rowHeight: CGFloat = 0
-        for subview in subviews {
-            let size = fittedSize(of: subview, maxWidth: bounds.width)
-            if x > bounds.minX, x + size.width > bounds.maxX {
-                y += rowHeight + spacing
-                x = bounds.minX
-                rowHeight = 0
+        for row in rows(for: subviews, maxWidth: bounds.width) {
+            var x = bounds.minX
+            for item in row.items {
+                let origin = CGPoint(x: x, y: y + (row.height - item.size.height) / 2)
+                subviews[item.index].place(at: origin, proposal: ProposedViewSize(item.size))
+                x += item.size.width + spacing
             }
-            subview.place(at: CGPoint(x: x, y: y), proposal: ProposedViewSize(size))
-            x += size.width + spacing
-            rowHeight = max(rowHeight, size.height)
+            y += row.height + spacing
         }
+    }
+
+    private func rows(for subviews: Subviews, maxWidth: CGFloat) -> [Row] {
+        var rows: [Row] = []
+        var current = Row()
+        for (index, subview) in subviews.enumerated() {
+            let size = fittedSize(of: subview, maxWidth: maxWidth)
+            let proposedWidth = current.items.isEmpty ? size.width : current.width + spacing + size.width
+            if !current.items.isEmpty, proposedWidth > maxWidth {
+                rows.append(current)
+                current = Row()
+            }
+            current.width = current.items.isEmpty ? size.width : current.width + spacing + size.width
+            current.height = max(current.height, size.height)
+            current.items.append((index, size))
+        }
+        if !current.items.isEmpty { rows.append(current) }
+        return rows
     }
 
     private func fittedSize(of subview: LayoutSubview, maxWidth: CGFloat) -> CGSize {

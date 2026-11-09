@@ -50,6 +50,7 @@ Gegenereerd met de UI-test `AppStoreScreenshots` op de iPhone 18 Pro Max-simulat
 4. `04-over-stroompeil.png` - achterkant van de kaart
 5. `05-widgets-beginscherm.png` - widgets op het beginscherm
 6. `06-dashboard-dark.png` - donkere modus
+7. `07-jaaroverzicht.png` - jaaroverzicht met de groenste dag geselecteerd
 
 Alleen iPhone: de app is iPhone-only, dus iPad-screenshots zijn niet nodig. Apple schaalt de 6,9"-set automatisch voor kleinere iPhones.
 

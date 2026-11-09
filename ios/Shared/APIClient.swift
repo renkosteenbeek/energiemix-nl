@@ -3,7 +3,10 @@ import Foundation
 protocol EnergyDataSource: Sendable {
     func mix(at hour: Date, reload: Bool) async throws -> Mix
     func timeline(reload: Bool) async throws -> [TimePoint]
+    func timeline(from: Date, to: Date) async throws -> [TimePoint]
+    func year(_ year: Int, reload: Bool) async throws -> YearData
     func story(at hour: Date, reload: Bool) -> AsyncThrowingStream<String, Error>
+    func dayStory(_ day: Date, reload: Bool) -> AsyncThrowingStream<String, Error>
 }
 
 enum APIError: LocalizedError, Equatable {
@@ -29,7 +32,7 @@ struct APIClient: EnergyDataSource {
     static let live = APIClient(baseURL: AppConfig.apiBaseURL, session: .stroompeil)
 
     func mix(at hour: Date, reload: Bool) async throws -> Mix {
-        let request = makeRequest(path: "api/mix", hour: hour, reload: reload)
+        let request = makeRequest(path: "api/mix", query: ["at": ISODate.string(from: hour.flooredToHour)], reload: reload)
         let data = try await fetch(request)
         do {
             return try JSONDecoder.stroompeil.decode(MixResponse.self, from: data).mix
@@ -39,17 +42,36 @@ struct APIClient: EnergyDataSource {
     }
 
     func timeline(reload: Bool) async throws -> [TimePoint] {
-        let request = makeRequest(path: "api/timeline", hour: nil, reload: reload)
+        try await decode([TimePoint].self, from: makeRequest(path: "api/timeline", query: [:], reload: reload))
+    }
+
+    func timeline(from: Date, to: Date) async throws -> [TimePoint] {
+        let query = ["from": ISODate.string(from: from.flooredToHour), "to": ISODate.string(from: to.flooredToHour)]
+        return try await decode([TimePoint].self, from: makeRequest(path: "api/timeline", query: query, reload: false))
+    }
+
+    func year(_ year: Int, reload: Bool) async throws -> YearData {
+        try await decode(YearData.self, from: makeRequest(path: "api/year", query: ["year": String(year)], reload: reload))
+    }
+
+    func story(at hour: Date, reload: Bool) -> AsyncThrowingStream<String, Error> {
+        streamText(makeRequest(path: "api/story", query: ["at": ISODate.string(from: hour.flooredToHour)], reload: reload))
+    }
+
+    func dayStory(_ day: Date, reload: Bool) -> AsyncThrowingStream<String, Error> {
+        streamText(makeRequest(path: "api/story", query: ["day": DutchFormat.isoDay(day)], reload: reload))
+    }
+
+    private func decode<T: Decodable>(_ type: T.Type, from request: URLRequest) async throws -> T {
         let data = try await fetch(request)
         do {
-            return try JSONDecoder.stroompeil.decode([TimePoint].self, from: data)
+            return try JSONDecoder.stroompeil.decode(type, from: data)
         } catch {
             throw APIError.invalidResponse
         }
     }
 
-    func story(at hour: Date, reload: Bool) -> AsyncThrowingStream<String, Error> {
-        let request = makeRequest(path: "api/story", hour: hour, reload: reload)
+    private func streamText(_ request: URLRequest) -> AsyncThrowingStream<String, Error> {
         let session = session
         return AsyncThrowingStream { continuation in
             let task = Task {
@@ -81,10 +103,10 @@ struct APIClient: EnergyDataSource {
         }
     }
 
-    private func makeRequest(path: String, hour: Date?, reload: Bool) -> URLRequest {
+    private func makeRequest(path: String, query: [String: String], reload: Bool) -> URLRequest {
         var components = URLComponents(url: baseURL.appending(path: path), resolvingAgainstBaseURL: false)!
-        if let hour {
-            components.queryItems = [URLQueryItem(name: "at", value: ISODate.string(from: hour.flooredToHour))]
+        if !query.isEmpty {
+            components.queryItems = query.sorted { $0.key < $1.key }.map { URLQueryItem(name: $0.key, value: $0.value) }
         }
         var request = URLRequest(url: components.url!)
         request.cachePolicy = reload ? .reloadIgnoringLocalCacheData : .useProtocolCachePolicy

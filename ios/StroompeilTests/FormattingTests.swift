@@ -54,7 +54,43 @@ struct FormattingTests {
         #expect(DutchFormat.relative(hour: november.addingHours(-1), now: november) == "1\(nbsp)uur geleden")
         #expect(DutchFormat.relative(hour: november.addingHours(24), now: november) == "over 24\(nbsp)uur")
         #expect(DutchFormat.relative(hour: november.addingHours(-40), now: november) == "2\(nbsp)dagen geleden")
-        #expect(DutchFormat.relative(hour: november.addingHours(-720), now: november) == "30\(nbsp)dagen geleden")
+        #expect(DutchFormat.relative(hour: november.addingHours(-720), now: november) == "4\(nbsp)weken geleden")
+        #expect(DutchFormat.relative(hour: november.addingHours(-24 * 160), now: november) == "5\(nbsp)maanden geleden")
+    }
+
+    @Test func dayLabels() {
+        let day = DutchFormat.day(fromISO: "2026-11-09")!
+        let lastYear = DutchFormat.day(fromISO: "2025-11-10")!
+        #expect(DutchFormat.dayLong(day, now: november) == "maandag 9 november")
+        #expect(DutchFormat.dayLong(lastYear, now: november) == "maandag 10 november 2025")
+        #expect(DutchFormat.dayCompact(day, now: november) == "Ma 9 nov")
+        #expect(DutchFormat.dayCompact(lastYear, now: november) == "Ma 10 nov 2025")
+        #expect(DutchFormat.dayShort(DutchFormat.day(fromISO: "2026-04-29")!, now: november) == "29 apr")
+        #expect(DutchFormat.monthTitle(day) == "November 2026")
+        #expect(DutchFormat.monthShort(DutchFormat.day(fromISO: "2026-03-15")!) == "MRT")
+    }
+
+    @Test func isoDaysRoundTripAcrossDaylightSaving() {
+        for raw in ["2026-03-29", "2026-10-25", "2024-02-29", "2021-01-01"] {
+            let day = DutchFormat.day(fromISO: raw)
+            #expect(day != nil)
+            #expect(day.map(DutchFormat.isoDay) == raw)
+            #expect(day.map { DutchFormat.amsterdamHour($0) } == 0)
+        }
+        #expect(DutchFormat.day(fromISO: "gisteren") == nil)
+    }
+
+    @Test func relativeDayLabels() {
+        let today = DutchFormat.day(fromISO: "2026-11-09")!
+        func ago(_ days: Int) -> String {
+            DutchFormat.dayRelative(DutchFormat.addingDays(-days, to: today), now: november)
+        }
+        #expect(ago(0) == "vandaag")
+        #expect(ago(1) == "gisteren")
+        #expect(ago(5) == "5\(nbsp)dagen geleden")
+        #expect(ago(20) == "3\(nbsp)weken geleden")
+        #expect(ago(100) == "3\(nbsp)maanden geleden")
+        #expect(ago(800) == "2\(nbsp)jaar geleden")
     }
 
     @Test func hourMath() {

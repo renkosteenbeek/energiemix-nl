@@ -12,10 +12,11 @@ The app requires no login or account. Open the app to see the current energy mix
 
 1. View the current green percentage on the large card at the top. Tap the "i" button to read about the app; the back of the card links to the privacy policy and support page.
 2. Tap a bar in the "Dagritme" timeline, or drag horizontally across it, to see another hour. The arrows move one day back or forward, "NU" returns to the current hour.
-3. Read the short interpretation ("Duiding") of the selected hour.
-4. Scroll down and tap "Alle bronnen" for a breakdown of all energy sources.
-5. Pull down to refresh.
-6. Add the Stroompeil widget to the home screen or Lock Screen.
+3. Switch the timeline between "Dag", "Maand" and "Jaar" (or pinch on the chart) to zoom out to a month or a whole year, back to 2021. Tap a day to see its mix; tap "Dag" to see the hours of that day.
+4. Read the short interpretation ("Duiding") of the selected hour or day.
+5. Scroll down and tap "Alle bronnen" for a breakdown of all energy sources.
+6. Pull down to refresh.
+7. Add the Stroompeil widget to the home screen or Lock Screen.
 
 ## Server dependency
 

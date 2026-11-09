@@ -30,6 +30,7 @@ Wat je ziet:
 
 - Het huidige groene percentage van de Nederlandse stroom
 - Het dagritme: hoe het groene percentage door de dag beweegt, met de verwachting voor de komende 24 uur
+- Zoom uit naar een maand of een heel jaar en zie de seizoenen, de groenste en de grijste dag, terug tot 2021
 - Een korte duiding die de cijfers in context plaatst
 - Een overzicht van alle energiebronnen
 - Widgets voor je beginscherm en toegangsscherm
@@ -40,7 +41,7 @@ Of je nu wilt weten of dit een goed moment is om je auto op te laden of de wasma
 
 Gratis, zonder account, zonder advertenties en zonder tracking.
 ```
-(1019 tekens - max 4000)
+(1129 tekens - max 4000)
 
 ## Keywords
 ```

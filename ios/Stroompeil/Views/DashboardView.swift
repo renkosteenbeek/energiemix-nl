@@ -45,8 +45,16 @@ struct DashboardView: View {
 
     @ViewBuilder
     private func content(screenWidth: CGFloat) -> some View {
-        if let mix = model.displayedMix {
-            heroSection(mix: mix, screenWidth: screenWidth)
+        if model.scale == .day, model.displayedMix == nil {
+            if let error = model.mixError {
+                StatusCard(title: "Geen gegevens", message: error, retry: model.retry)
+                    .padding(.top, 24)
+            } else {
+                LoadingSkeleton()
+                    .padding(.top, 24)
+            }
+        } else {
+            heroSection(screenWidth: screenWidth)
                 .padding(.top, 24)
                 .padding(.bottom, 16)
 
@@ -60,8 +68,8 @@ struct DashboardView: View {
             }
             .padding(.vertical, 16)
 
-            if model.mixError == nil, mix.hasData {
-                let topSources = mix.sources.filter { $0.percentage >= 1 }.prefix(3)
+            if model.snapshotError == nil, let snapshot = model.snapshot, snapshot.hasData {
+                let topSources = snapshot.sources.filter { $0.percentage >= 1 }.prefix(3)
                 if !topSources.isEmpty {
                     VStack(alignment: .leading, spacing: 0) {
                         SectionLabel("Grootste bronnen")
@@ -70,42 +78,44 @@ struct DashboardView: View {
                     .padding(.vertical, 16)
                 }
 
-                AllSourcesView(sources: mix.sources)
+                AllSourcesView(sources: snapshot.sources)
             }
-        } else if let error = model.mixError {
-            StatusCard(
-                title: "Geen gegevens",
-                message: error,
-                retry: model.retry
-            )
-            .padding(.top, 24)
-        } else {
-            LoadingSkeleton()
-                .padding(.top, 24)
         }
     }
 
+    private var focusTitle: String {
+        model.scale == .day
+            ? DutchFormat.compact(model.focusHour)
+            : DutchFormat.dayCompact(model.focusDay, now: model.nowHour)
+    }
+
     @ViewBuilder
-    private func heroSection(mix: Mix, screenWidth: CGFloat) -> some View {
-        if let error = model.mixError {
-            StatusCard(
-                title: "\(DutchFormat.compact(model.focusHour)) kon niet worden geladen",
-                message: error,
-                retry: model.retry
-            )
-        } else if !mix.hasData {
-            StatusCard(
-                title: "Geen data voor \(DutchFormat.compact(mix.focusTime))",
-                message: "Het Nationaal Energie Dashboard heeft voor dit uur nog geen cijfers.",
-                retry: nil
-            )
+    private func heroSection(screenWidth: CGFloat) -> some View {
+        if let error = model.snapshotError {
+            StatusCard(title: "\(focusTitle) kon niet worden geladen", message: error, retry: model.retry)
+        } else if let snapshot = model.snapshot {
+            if snapshot.hasData {
+                HeroCard(
+                    snapshot: snapshot,
+                    nowHour: model.nowHour,
+                    isLoading: model.isLoadingSnapshot,
+                    screenWidth: screenWidth
+                )
+            } else {
+                StatusCard(
+                    title: "Geen data voor \(focusTitle)",
+                    message: snapshot.span == .hour
+                        ? "Het Nationaal Energie Dashboard heeft voor dit uur nog geen cijfers."
+                        : "Het Nationaal Energie Dashboard heeft voor deze dag nog geen cijfers.",
+                    retry: nil
+                )
+            }
         } else {
-            HeroCard(
-                mix: mix,
-                nowHour: model.nowHour,
-                isLoading: model.isLoadingMix,
-                screenWidth: screenWidth
-            )
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .fill(Palette.rule2)
+                .frame(height: 280)
+                .modifier(Pulsing())
+                .accessibilityLabel("Gegevens worden geladen")
         }
     }
 

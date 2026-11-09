@@ -33,13 +33,23 @@ final class AppStoreScreenshots: XCTestCase {
             app.buttons["Dag eerder"].tap()
             sleep(1)
         }
-        let rhythm = app.descendants(matching: .any)["Dagritme"].firstMatch
+        let rhythm = app.descendants(matching: .any)["Tijdlijn per uur"].firstMatch
         let x = (CGFloat(target.index) + 0.5) / 73
         rhythm.coordinate(withNormalizedOffset: CGVector(dx: x, dy: 0.35)).tap()
         sleep(2)
         waitForStory(in: app)
         capture("01-dashboard-\(appearance)")
         guard appearance == "light" else { return }
+
+        app.buttons["Jaar"].tap()
+        let greenest = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Groenste dag")).firstMatch
+        XCTAssertTrue(greenest.waitForExistence(timeout: 30))
+        greenest.tap()
+        sleep(2)
+        waitForStory(in: app)
+        capture("07-jaaroverzicht")
+        app.buttons["Dag"].tap()
+        sleep(2)
 
         app.buttons["Over deze app"].tap()
         sleep(1)

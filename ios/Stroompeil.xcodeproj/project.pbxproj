@@ -12,6 +12,7 @@
 		239F432FEF4C4DDD800DF5A5 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A13119F1A4F2A560B83B60B /* Models.swift */; };
 		370D35A7F95D8F8D31B49F3B /* AppStoreScreenshots.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11D13089710A7744BCB77D1B /* AppStoreScreenshots.swift */; };
 		39FF456B735D719512E5561C /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55ACCE06DB9DC6ADB30CD962 /* Components.swift */; };
+		3D877BC95434A671550BB38C /* PeriodWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5582CC8F618570D87FAE08EF /* PeriodWindow.swift */; };
 		40A066AB958E3297E84814F6 /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50123739303809AC6A0C00AD /* APIClient.swift */; };
 		4899A1DB0FCD9C3FB4857429 /* RhythmView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC3CEB1D02B283C67DB87418 /* RhythmView.swift */; };
 		4A3E0ADF03BAB5C269888116 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 319DF052FDC3F36253D0A86B /* PrivacyInfo.xcprivacy */; };
@@ -28,6 +29,7 @@
 		91643818F702FCE2A2E3C10B /* RhythmWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72E141F7076DA3A24640B77B /* RhythmWindow.swift */; };
 		9275B3AE012529F8A644A286 /* HeroCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A96B258DA1D9193EF378882A /* HeroCard.swift */; };
 		98CB1F3AE9E674F254F18E7B /* DutchFormat.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC719B0731A9454AC7BF4E74 /* DutchFormat.swift */; };
+		9ED57E99BE88D9DF303568F2 /* PeriodWindowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7124FDF6CF7A4DACCBF7BF00 /* PeriodWindowTests.swift */; };
 		A025124CD37E8AA70A6EBE69 /* Hours.swift in Sources */ = {isa = PBXBuildFile; fileRef = BAA047800E7E3DAF350B9124 /* Hours.swift */; };
 		A0D57C5A134C66CCE5AFAF59 /* ModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1D1030658DEF07E0C9F2CE7 /* ModelTests.swift */; };
 		A6B9501A24E5F68A69ACFDEF /* StroompeilWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = EB66A7EC333AD7D199FCF7B2 /* StroompeilWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -94,10 +96,12 @@
 		319DF052FDC3F36253D0A86B /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		40308AC248FCF5F9018136C2 /* Provider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Provider.swift; sourceTree = "<group>"; };
 		50123739303809AC6A0C00AD /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
+		5582CC8F618570D87FAE08EF /* PeriodWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeriodWindow.swift; sourceTree = "<group>"; };
 		55ACCE06DB9DC6ADB30CD962 /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components.swift; sourceTree = "<group>"; };
 		5C510DC233E80E3AD41AF7C3 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
 		6079A83D6807162B9060EE82 /* DashboardModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardModel.swift; sourceTree = "<group>"; };
 		6A13119F1A4F2A560B83B60B /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		7124FDF6CF7A4DACCBF7BF00 /* PeriodWindowTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeriodWindowTests.swift; sourceTree = "<group>"; };
 		72E141F7076DA3A24640B77B /* RhythmWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RhythmWindow.swift; sourceTree = "<group>"; };
 		82743F8541B90FC9A87FE71E /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		8387C576C861BAE922B65147 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
@@ -208,6 +212,7 @@
 			isa = PBXGroup;
 			children = (
 				6079A83D6807162B9060EE82 /* DashboardModel.swift */,
+				5582CC8F618570D87FAE08EF /* PeriodWindow.swift */,
 				72E141F7076DA3A24640B77B /* RhythmWindow.swift */,
 			);
 			path = Model;
@@ -243,6 +248,7 @@
 				976A6272025519BB2E011144 /* DashboardModelTests.swift */,
 				B00D64472530C226A6FA3E66 /* FormattingTests.swift */,
 				E1D1030658DEF07E0C9F2CE7 /* ModelTests.swift */,
+				7124FDF6CF7A4DACCBF7BF00 /* PeriodWindowTests.swift */,
 				0DEB082BEDAC9EFC4E44D64C /* RhythmWindowTests.swift */,
 			);
 			path = StroompeilTests;
@@ -412,6 +418,7 @@
 				A025124CD37E8AA70A6EBE69 /* Hours.swift in Sources */,
 				A92A8D54F0DC33123B80D73C /* Models.swift in Sources */,
 				78DD9BDD8E53CE62F479B378 /* Palette.swift in Sources */,
+				3D877BC95434A671550BB38C /* PeriodWindow.swift in Sources */,
 				4899A1DB0FCD9C3FB4857429 /* RhythmView.swift in Sources */,
 				91643818F702FCE2A2E3C10B /* RhythmWindow.swift in Sources */,
 				A881937093B6D4FF6B8BE7BE /* SourceStyle.swift in Sources */,
@@ -455,6 +462,7 @@
 				B4A97CC363D6593EC766E0AE /* DashboardModelTests.swift in Sources */,
 				CA51203466DE447DBCF631A6 /* FormattingTests.swift in Sources */,
 				A0D57C5A134C66CCE5AFAF59 /* ModelTests.swift in Sources */,
+				9ED57E99BE88D9DF303568F2 /* PeriodWindowTests.swift in Sources */,
 				F64A841046993DA7A42496B6 /* RhythmWindowTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

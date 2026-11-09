@@ -23,7 +23,7 @@ final class StroompeilUITests: XCTestCase {
         app.buttons["Sluiten"].tap()
         XCTAssertTrue(app.buttons["Over deze app"].waitForExistence(timeout: 5))
 
-        let rhythm = app.descendants(matching: .any)["Dagritme"].firstMatch
+        let rhythm = app.descendants(matching: .any)["Tijdlijn per uur"].firstMatch
         XCTAssertTrue(rhythm.exists)
         let rhythmTop = rhythm.frame.minY
         rhythm.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
@@ -62,6 +62,52 @@ final class StroompeilUITests: XCTestCase {
         XCTAssertEqual(allSources.value as? String, "Uitgeklapt")
         app.swipeUp()
         capture("05-alle-bronnen")
+    }
+
+    func testZoomingThroughDayMonthAndYear() throws {
+        let app = XCUIApplication()
+        app.launch()
+        let hero = app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS %@", "procent duurzame stroom")).firstMatch
+        XCTAssertTrue(hero.waitForExistence(timeout: 30))
+
+        app.buttons["Jaar"].tap()
+        XCTAssertTrue(app.buttons["Jaar"].isSelected)
+        let yearChart = app.descendants(matching: .any).matching(NSPredicate(format: "label BEGINSWITH %@", "Tijdlijn per dag over")).firstMatch
+        XCTAssertTrue(yearChart.waitForExistence(timeout: 20))
+        XCTAssertTrue(hero.waitForExistence(timeout: 20))
+        let greenest = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Groenste dag")).firstMatch
+        XCTAssertTrue(greenest.waitForExistence(timeout: 10))
+        sleep(2)
+        capture("10-jaar")
+
+        greenest.tap()
+        XCTAssertTrue(app.buttons["Terug naar nu"].waitForExistence(timeout: 5))
+        sleep(2)
+        capture("11-jaar-groenste-dag")
+
+        yearChart.pinch(withScale: 2.5, velocity: 3)
+        XCTAssertTrue(app.buttons["Maand"].waitForExistence(timeout: 5))
+        let monthSelected = NSPredicate(format: "isSelected == true")
+        expectation(for: monthSelected, evaluatedWith: app.buttons["Maand"])
+        waitForExpectations(timeout: 5)
+        sleep(2)
+        capture("12-maand")
+
+        app.buttons["Maand eerder"].tap()
+        XCTAssertTrue(app.buttons["Maand later"].isEnabled)
+
+        app.buttons["Dag"].tap()
+        expectation(for: monthSelected, evaluatedWith: app.buttons["Dag"])
+        waitForExpectations(timeout: 5)
+        XCTAssertTrue(app.descendants(matching: .any)["Tijdlijn per uur"].waitForExistence(timeout: 5))
+        sleep(2)
+        capture("13-dag-in-verleden")
+
+        app.buttons["Terug naar nu"].tap()
+        let hourChart = app.descendants(matching: .any)["Tijdlijn per uur"].firstMatch
+        hourChart.pinch(withScale: 0.4, velocity: -3)
+        expectation(for: monthSelected, evaluatedWith: app.buttons["Maand"])
+        waitForExpectations(timeout: 5)
     }
 
     func testDeepLinkReturnsToNow() throws {

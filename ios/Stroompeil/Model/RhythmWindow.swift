@@ -52,17 +52,16 @@ struct RhythmWindow: Equatable, Sendable {
 }
 
 struct BarLayout: Equatable {
-    static let gap: CGFloat = 1.5
-
     let width: CGFloat
     let count: Int
+    var gap: CGFloat = 1.5
 
     var barWidth: CGFloat {
         guard count > 0 else { return 0 }
-        return max(0.5, (width - Self.gap * CGFloat(count - 1)) / CGFloat(count))
+        return max(0.5, (width - gap * CGFloat(count - 1)) / CGFloat(count))
     }
 
-    var stride: CGFloat { barWidth + Self.gap }
+    var stride: CGFloat { barWidth + gap }
 
     func minX(_ index: Int) -> CGFloat {
         CGFloat(index) * stride
