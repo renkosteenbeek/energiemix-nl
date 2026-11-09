@@ -1,21 +1,21 @@
 # Screenshot Captions
 
-Optionele bijschriften die onder elke screenshot in de App Store getoond kunnen worden. Houd ze kort en krachtig.
+Optionele bijschriften bij de screenshots. Kort en krachtig.
 
-## Screenshot 1: `01-dashboard-80pct-groen.png`
-**Caption:** 80% duurzaam - in een oogopslag
+## 1: `01-dashboard-light.png`
+**Caption:** Hoe groen is je stroom? In een oogopslag
 
-## Screenshot 2: `02-alle-bronnen-80pct-groen.png`
+## 2: `02-alle-bronnen.png`
 **Caption:** Elke bron, van zon tot kolen
 
-## Screenshot 3: `03-dashboard-68pct-forecast.png`
-**Caption:** Dagritme en forecast
+## 3: `03-nu-met-verwachting.png`
+**Caption:** Dagritme en verwachting voor de komende uren
 
-## Screenshot 4: `04-alle-bronnen-68pct-forecast.png`
-**Caption:** Alle bronnen in detail
+## 4: `04-over-stroompeil.png`
+**Caption:** Data van het Nationaal Energie Dashboard
 
-## Aanbevolen volgorde in App Store
-1. Dashboard 80% (sterkste eerste indruk)
-2. Alle bronnen 80% (diepte tonen)
-3. Dashboard forecast (functionaliteit tonen)
-4. Alle bronnen forecast (volledigheid)
+## 5: `05-widgets-beginscherm.png`
+**Caption:** Altijd zichtbaar op je beginscherm
+
+## 6: `06-dashboard-dark.png`
+**Caption:** Ook in donkere modus

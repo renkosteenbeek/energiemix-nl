@@ -2,28 +2,32 @@
 
 ## What this app does
 
-Stroompeil shows the real-time energy mix of the Dutch electricity grid. It displays what percentage of electricity is currently generated from sustainable sources (wind, solar) versus fossil fuels (natural gas, coal). Data comes from the Dutch National Energy Dashboard (NED - api.ned.nl), an official government-backed data source.
+Stroompeil shows the real-time energy mix of the Dutch electricity grid. It displays what percentage of electricity is currently generated from sustainable sources (wind, solar, biomass) versus other sources (natural gas, coal, nuclear). Data comes from the Dutch National Energy Dashboard (NED, api.ned.nl), the data platform of the Dutch grid operators.
+
+The app is written natively in Swift and SwiftUI. It includes home screen widgets (small and medium) and Lock Screen widgets.
 
 ## How to test
 
-The app requires no login or account. Simply open the app to see the current energy mix. You can:
+The app requires no login or account. Open the app to see the current energy mix. You can:
 
-1. View the current green percentage at the top
-2. Scroll down to see all energy sources with their contribution
-3. Use the timeline to browse different hours of the day
-4. Read the AI-generated interpretation ("duiding") section
+1. View the current green percentage on the large card at the top. Tap the "i" button to read about the app; the back of the card links to the privacy policy and support page.
+2. Tap a bar in the "Dagritme" timeline, or drag horizontally across it, to see another hour. The arrows move one day back or forward, "NU" returns to the current hour.
+3. Read the short interpretation ("Duiding") of the selected hour.
+4. Scroll down and tap "Alle bronnen" for a breakdown of all energy sources.
+5. Pull down to refresh.
+6. Add the Stroompeil widget to the home screen or Lock Screen.
 
-## API dependencies
+## Server dependency
 
-The app fetches data from a backend server at energiemix.gentle-innovations.nl, which in turn connects to:
-- **NED API** (api.ned.nl) - Dutch energy data (requires API key, server-side)
-- **OpenAI API** - for generating the short text interpretation (optional, falls back to template-based text)
+The app fetches data from our backend at energiemix.gentle-innovations.nl, which connects server-side to:
+- **NED API** (api.ned.nl) for Dutch energy data
+- **Anthropic API** (Claude) for the short text interpretation (falls back to a rule-based text)
 
-Both APIs are accessed server-side only. The app itself makes no direct third-party API calls.
+The app itself makes no third-party API calls and contains no API keys.
 
-## No login required
+## Privacy
 
-The app does not collect any personal data, has no user accounts, and requires no sign-in.
+The app does not collect personal data, has no accounts, no analytics and no advertising. It keeps a temporary cache of the downloaded energy data on the device so it opens quickly and can show the last known values offline.
 
 ## Content
 

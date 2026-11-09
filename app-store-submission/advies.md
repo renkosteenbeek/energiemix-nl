@@ -41,77 +41,51 @@ Dit betekent: de eerste die dit niche pakt heeft een sterke positie.
 
 ## Screenshot Strategie
 
-### Huidige screenshots (4 stuks)
-Voldoende voor een eerste release (minimum is 3). Ze tonen:
-1. Dashboard met hoog groen percentage (80%)
-2. Alle bronnen breakdown (80%)
-3. Dashboard met forecast (68%)
-4. Alle bronnen breakdown (68%)
+### Screenshots (native app, 6,9", 1320 x 2868)
+Gegenereerd met de UI-test `AppStoreScreenshots` op de iPhone 18 Pro Max-simulator (zie CLAUDE.md). De test zoekt het groenste uur van de afgelopen week op, zodat de eerste indruk sterk is.
 
-### Aanbevelingen voor betere screenshots
-- **Overweeg framedscreenshots**: gebruik tools als Fastlane Frameit of Screenshots Pro om een iPhone-frame en titeltekst toe te voegen
-- **Dark mode**: maak ook een dark mode screenshot om het bereik te tonen
-- **iPad screenshots**: als je iPad ondersteunt, zijn aparte screenshots verplicht
-- **Tip**: de screenshots met hoog groenpercentage (80%) zijn het meest aantrekkelijk - gebruik die als eerste
+1. `01-dashboard-light.png` - hoog groen percentage
+2. `02-alle-bronnen.png` - alle bronnen met donut
+3. `03-nu-met-verwachting.png` - het huidige uur met verwachting
+4. `04-over-stroompeil.png` - achterkant van de kaart
+5. `05-widgets-beginscherm.png` - widgets op het beginscherm
+6. `06-dashboard-dark.png` - donkere modus
 
-### Vereiste formaten
-- iPhone 6.9" (iPhone 16 Pro Max): 1320 x 2868 px
-- iPhone 6.7" (iPhone 15 Plus): 1290 x 2796 px
-- iPhone 6.5" (iPhone 14 Plus): 1284 x 2778 px
-- iPad Pro 13": 2064 x 2752 px (indien iPad wordt ondersteund)
+Alleen iPhone: de app is iPhone-only, dus iPad-screenshots zijn niet nodig. Apple schaalt de 6,9"-set automatisch voor kleinere iPhones.
 
-Controleer de resolutie van je huidige screenshots en schaal indien nodig.
+Let op: de simulator staat in het Engels, dus systeemteksten op het widget-screenshot (zoals "Search") zijn Engels. Zet de simulator op Nederlands als je dat screenshot opnieuw maakt.
 
 ---
 
-## Privacy Policy
+## Privacy
 
-Apple vereist een privacy policy URL. De app:
-- Gebruikt **geen** persoonlijke gegevens
-- Slaat **geen** data lokaal op
-- Heeft **geen** accounts of login
-- Maakt API calls naar NED.nl (publieke energiedata) en OpenAI (voor tekstgeneratie)
+De app verzamelt geen persoonlijke gegevens, heeft geen accounts, geen analytics en geen advertenties. Wel bewaren app en widget een tijdelijke cache van de energiedata op het toestel (geen persoonlijke gegevens). De privacypagina is daarop aangepast.
 
-Je hebt twee opties:
-1. **Eenvoudige privacy policy pagina** op energiemix.gentle-innovations.nl/privacy
-2. **Gratis generator** zoals privacypolicies.com of iubenda.com
-
-De privacy policy moet minimaal vermelden:
-- Welke data wordt verzameld (geen persoonlijke data)
-- Welke third-party services worden gebruikt (NED API, OpenAI)
-- Contactgegevens
+- App Privacy in App Store Connect: "Data Not Collected"
+- Privacy manifest (`PrivacyInfo.xcprivacy`) zit in app en widget: geen tracking, geen verzamelde data, geen required-reason API's
 
 ---
 
 ## Checklist voor Submission
 
-### Vooraf
-- [ ] Kies definitieve app-naam
-- [ ] Maak Apple Developer account aan ($99/jaar) als dat nog niet bestaat
-- [ ] Maak privacy policy pagina aan
-- [ ] Maak support URL aan (kan dezelfde website zijn)
-- [ ] Controleer dat bundle ID `nl.gentleinnovations.stroompeil` correct is in Apple Developer portal
-
-### App Store Connect
-- [ ] Maak nieuwe app aan in App Store Connect
-- [ ] Vul alle teksten in (zie `app-store-teksten.md`)
-- [ ] Upload screenshots per device-formaat
-- [ ] Stel prijsstelling in (gratis)
-- [ ] Selecteer content rating (4+, geen aanstootgevend materiaal)
-- [ ] Vul export compliance in (gebruikt geen encryptie buiten standaard HTTPS)
-- [ ] Voeg review notes toe (zie `review-notes.md`)
+### Server
+- [ ] Controleer vlak voor indienen dat https://energiemix.gentle-innovations.nl/api/health, `/privacy` en `/support` een 200 geven. Zonder werkende API toont de app alleen een foutmelding en wordt hij afgewezen.
 
 ### Xcode / Build
-- [ ] Zet versienummer op 1.0.0 in Xcode
-- [ ] Zet build number op 1
-- [ ] Controleer dat app-icoon (1024x1024) correct is ingesteld
-- [ ] Update display name naar gekozen naam
-- [ ] Doe een clean build: `Product > Clean Build Folder`
-- [ ] Archiveer: `Product > Archive`
-- [ ] Upload via Xcode Organizer naar App Store Connect
+- [ ] Versie en buildnummer in `ios/project.yml` (`MARKETING_VERSION` 1.0, `CURRENT_PROJECT_VERSION` 2). Elk geüpload build moet een hoger buildnummer hebben dan het vorige.
+- [ ] `cd ios && xcodegen generate`, open `Stroompeil.xcodeproj`
+- [ ] Bundle ID's ongewijzigd: `nl.gentleinnovations.stroompeil` en `nl.gentleinnovations.stroompeil.widget`
+- [ ] Product > Archive met het schema Stroompeil, daarna uploaden via Organizer
+
+### App Store Connect
+- [ ] Teksten invullen (zie `app-store-teksten.md`)
+- [ ] Screenshots uploaden (6,9")
+- [ ] App Privacy: Data Not Collected
+- [ ] Leeftijdsclassificatie 4+
+- [ ] Export compliance: de Info.plist bevat `ITSAppUsesNonExemptEncryption = NO`, dus deze vraag wordt niet meer gesteld
+- [ ] Review notes toevoegen (zie `review-notes.md`)
 
 ### Na upload
-- [ ] Wacht op processing (kan 15-30 minuten duren)
-- [ ] Controleer dat build verschijnt in App Store Connect
-- [ ] Submit for Review
+- [ ] Wachten op processing (15-30 minuten)
+- [ ] Build selecteren en Submit for Review
 - [ ] Review duurt meestal 24-48 uur

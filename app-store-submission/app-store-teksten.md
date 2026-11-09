@@ -14,9 +14,9 @@ Hoe groen is NL stroom nu?
 
 ## Promotional Text
 ```
-Bekijk live hoe duurzaam de Nederlandse stroom is. Zie per uur welk deel van de elektriciteit uit wind, zon, gas of kolen komt.
+Bekijk actueel hoe duurzaam de Nederlandse stroom is. Zie per uur welk deel van de elektriciteit uit wind, zon, gas of kolen komt.
 ```
-(126 tekens - max 170)
+(130 tekens - max 170)
 
 Promotional text kan op elk moment worden aangepast zonder nieuwe review.
 
@@ -24,40 +24,40 @@ Promotional text kan op elk moment worden aangepast zonder nieuwe review.
 ```
 Hoe groen is de Nederlandse stroom op dit moment?
 
-Stroompeil laat je in een oogopslag zien hoeveel procent van de Nederlandse elektriciteit duurzaam is. De app toont real-time data van het Nederlandse elektriciteitsnet, opgesplitst naar bron: wind op zee, wind op land, zon, aardgas, steenkool, kernenergie, biomassa en meer.
+Stroompeil laat je in een oogopslag zien hoeveel procent van de Nederlandse elektriciteit duurzaam is. De app toont actuele data van het Nederlandse elektriciteitsnet, opgesplitst naar bron: wind op zee, wind op land, zon, aardgas, steenkool, kernenergie, biomassa en meer.
 
 Wat je ziet:
 
 - Het huidige groene percentage van de Nederlandse stroom
-- Een overzichtelijke breakdown van alle energiebronnen
-- Het dagritme: hoe het groene percentage door de dag beweegt
+- Het dagritme: hoe het groene percentage door de dag beweegt, met de verwachting voor de komende 24 uur
 - Een korte duiding die de cijfers in context plaatst
-- Forecasts voor de komende uren
+- Een overzicht van alle energiebronnen
+- Widgets voor je beginscherm en toegangsscherm
 
-De data komt rechtstreeks van het Nationaal Energie Dashboard (NED), de officiele databron voor de Nederlandse energiesector.
+De data komt rechtstreeks van het Nationaal Energie Dashboard (NED), het dataplatform van de Nederlandse netbeheerders.
 
-Of je nu benieuwd bent of dit een goed moment is om je wasmachine aan te zetten, of je gewoon wilt weten waar je stroom vandaan komt: Stroompeil geeft je het antwoord.
+Of je nu wilt weten of dit een goed moment is om je auto op te laden of de wasmachine aan te zetten, of gewoon benieuwd bent waar je stroom vandaan komt: Stroompeil geeft je het antwoord.
 
-Gratis, zonder account, zonder advertenties.
+Gratis, zonder account, zonder advertenties en zonder tracking.
 ```
-(732 tekens - max 4000)
+(1019 tekens - max 4000)
 
 ## Keywords
 ```
-energie,stroom,groen,duurzaam,mix,wind,zon,gas,kolen,nucleair,elektriciteit,hernieuwbaar,nederland
+energie,stroom,groen,duurzaam,mix,wind,zon,gas,kolen,widget,elektriciteit,hernieuwbaar,nederland
 ```
-(98 tekens - max 100)
+(96 tekens - max 100)
 
 Let op: woorden uit de app-naam ("stroompeil") worden al automatisch geindexeerd door Apple en hoeven niet in keywords.
 
 ## What's New (versie 1.0)
 ```
-Eerste release van Stroompeil. Bekijk real-time hoe groen de Nederlandse stroom is.
+Eerste release van Stroompeil. Bekijk actueel hoe groen de Nederlandse stroom is, met widgets voor je beginscherm en toegangsscherm.
 ```
 
 ## Copyright
 ```
-2025 Gentle Innovations
+2026 Gentle Innovations
 ```
 
 ## Categorie
@@ -70,6 +70,10 @@ Eerste release van Stroompeil. Bekijk real-time hoe groen de Nederlandse stroom 
 ## Prijsstelling
 - Gratis
 
-## URLs (nog aan te maken)
-- Support URL: https://energiemix.gentle-innovations.nl
+## URLs
+- Support URL: https://energiemix.gentle-innovations.nl/support
 - Privacy Policy URL: https://energiemix.gentle-innovations.nl/privacy
+
+## App Privacy (App Store Connect)
+- Gegevensverzameling: "Er worden geen gegevens verzameld" (Data Not Collected)
+- Tracking: nee

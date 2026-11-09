@@ -12,3 +12,6 @@ README.md
 Dockerfile
 docker-compose.yml
 .dockerignore
+ios
+android
+app-store-submission
