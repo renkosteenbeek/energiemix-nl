@@ -24,9 +24,17 @@ export type Facts = {
 const SUNRISE_BY_MONTH = [8, 8, 7, 7, 6, 5, 5, 6, 7, 8, 8, 8];
 const SUNSET_BY_MONTH = [17, 18, 19, 20, 21, 22, 22, 21, 20, 19, 17, 17];
 
+const amsterdamParts = new Intl.DateTimeFormat("en-GB", {
+  timeZone: "Europe/Amsterdam",
+  month: "numeric",
+  hour: "numeric",
+  hourCycle: "h23",
+});
+
 function isDaylightInNL(at: Date): boolean {
-  const month = at.getUTCMonth();
-  const localHour = (at.getUTCHours() + 1) % 24;
+  const parts = amsterdamParts.formatToParts(at);
+  const month = Number(parts.find((p) => p.type === "month")?.value) - 1;
+  const localHour = Number(parts.find((p) => p.type === "hour")?.value);
   return localHour >= SUNRISE_BY_MONTH[month] && localHour < SUNSET_BY_MONTH[month];
 }
 

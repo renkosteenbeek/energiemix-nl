@@ -1,5 +1,5 @@
 import { computeFacts } from "@/lib/insights";
-import { describe, describeStream } from "@/lib/llm";
+import { cachedDescription, describeStream } from "@/lib/llm";
 import { clampAt, getMixAt, latestAvailableHour } from "@/lib/ned";
 import { cacheControl, withCors } from "@/lib/responseCache";
 
@@ -15,7 +15,7 @@ export async function GET(request: Request) {
   if (Number.isNaN(at.getTime())) {
     return new Response(JSON.stringify({ error: "ongeldige datum" }), {
       status: 400,
-      headers: { "Content-Type": "application/json" },
+      headers: withCors({ "Content-Type": "application/json" }),
     });
   }
 
@@ -23,7 +23,7 @@ export async function GET(request: Request) {
     const mix = await getMixAt(at);
     const facts = await computeFacts(at, mix);
 
-    const cached = await describe(facts);
+    const cached = cachedDescription(facts);
     if (cached) {
       return new Response(cached, {
         headers: withCors({
@@ -34,17 +34,18 @@ export async function GET(request: Request) {
     }
 
     const encoder = new TextEncoder();
-    const stream = new ReadableStream({
-      async start(controller) {
-        try {
-          for await (const chunk of describeStream(facts)) {
-            controller.enqueue(encoder.encode(chunk));
-          }
-        } catch (err) {
-          controller.error(err);
-          return;
+    const chunks = describeStream(facts);
+    const stream = new ReadableStream<Uint8Array>({
+      async pull(controller) {
+        const { value, done } = await chunks.next();
+        if (done) {
+          controller.close();
+        } else {
+          controller.enqueue(encoder.encode(value));
         }
-        controller.close();
+      },
+      async cancel() {
+        await chunks.return(undefined);
       },
     });
 
@@ -58,7 +59,7 @@ export async function GET(request: Request) {
   } catch (e) {
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "fout" }), {
       status: 500,
-      headers: { "Content-Type": "application/json" },
+      headers: withCors({ "Content-Type": "application/json" }),
     });
   }
 }

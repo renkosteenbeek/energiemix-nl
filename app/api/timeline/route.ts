@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getGreenTimeline } from "@/lib/ned";
-import { cacheControl, getCached, setCache, withCors } from "@/lib/responseCache";
+import { getCached, setCache, withCors } from "@/lib/responseCache";
 
 export async function OPTIONS() {
   return new Response(null, { status: 204, headers: withCors({}) });

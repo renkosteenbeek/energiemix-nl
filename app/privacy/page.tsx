@@ -48,7 +48,7 @@ export default function PrivacyPage() {
               voor energieproductiedata van het Nederlandse elektriciteitsnet.
             </li>
             <li>
-              <strong style={{ color: theme.ink }}>OpenAI API</strong> voor het
+              <strong style={{ color: theme.ink }}>Anthropic API</strong> (Claude) voor het
               genereren van een korte tekstuele duiding van de energiemix. Er
               worden geen gebruikersgegevens naar deze dienst gestuurd.
             </li>
@@ -58,8 +58,10 @@ export default function PrivacyPage() {
         <section className="mb-10">
           <h2 className="text-lg font-semibold mb-3">Opslag op je apparaat</h2>
           <p className="text-[15px] leading-relaxed" style={{ color: theme.dim }}>
-            De app slaat geen gegevens lokaal op. Er worden geen cookies geplaatst
-            en er is geen lokale database.
+            De app en de widget bewaren een tijdelijke kopie van de opgehaalde
+            energiedata op je apparaat, zodat ze snel laden en zonder verbinding
+            de laatst bekende stand kunnen tonen. Dit zijn geen persoonlijke
+            gegevens. Er worden geen cookies geplaatst en er is geen account.
           </p>
         </section>
 
@@ -82,7 +84,7 @@ export default function PrivacyPage() {
           className="pt-8 text-[13px]"
           style={{ borderTop: `1px solid ${theme.rule}`, color: theme.dim2 }}
         >
-          Laatst bijgewerkt: april 2025
+          Laatst bijgewerkt: november 2026
         </footer>
       </div>
     </main>

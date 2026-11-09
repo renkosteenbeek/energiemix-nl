@@ -1,10 +1,10 @@
-import OpenAI from "openai";
+import Anthropic from "@anthropic-ai/sdk";
 import type { Facts } from "./insights";
 
-const MODEL = "gpt-5.4-nano";
+const MODEL = "claude-haiku-5-5";
 
+const CACHE_TTL_MS = 2 * 60 * 60 * 1000;
 const fullCache = new Map<string, string>();
-const inflightCache = new Map<string, Promise<string>>();
 
 function templateFallback(facts: Facts): string {
   if (facts.notable.length === 0) {
@@ -44,59 +44,37 @@ function cacheKey(facts: Facts): string {
   });
 }
 
-function buildMessages(facts: Facts) {
-  return [
-    {
-      role: "system" as const,
-      content:
-        "Je schrijft 2 tot 3 korte, feitelijke Nederlandse zinnen voor een dashboard over de Nederlandse energiemix. " +
-        "Geen marketingtoon, geen emojis, geen 'we' of 'wij', geen vragen, geen aanhalingstekens. " +
-        "Begin nooit met de datum of het tijdstip — die wordt elders al getoond. " +
-        "Begin direct met de meest opvallende observatie (bijv. 'Aardgas domineert...', 'Het waait flink...', 'Bewolkt en weinig wind...'). " +
-        "Wees specifiek met getallen waar zinvol. " +
-        "Als het toekomst is, gebruik toekomstvorm ('verwacht', 'zal'). " +
-        "Maximaal 3 zinnen, samen onder de 50 woorden.",
-    },
-    {
-      role: "user" as const,
-      content: `Feiten:\n${JSON.stringify(compactPayload(facts), null, 2)}\n\nSchrijf de duiding.`,
-    },
-  ];
+const SYSTEM_PROMPT =
+  "Je schrijft 2 tot 3 korte, feitelijke Nederlandse zinnen voor een dashboard over de Nederlandse energiemix. " +
+  "Geen marketingtoon, geen emojis, geen 'we' of 'wij', geen vragen, geen aanhalingstekens. " +
+  "Begin nooit met de datum of het tijdstip: die wordt elders al getoond. " +
+  "Begin direct met de meest opvallende observatie (bijv. 'Aardgas domineert...', 'Het waait flink...', 'Bewolkt en weinig wind...'). " +
+  "Wees specifiek met getallen waar zinvol. " +
+  "Als het toekomst is, gebruik toekomstvorm ('verwacht', 'zal'). " +
+  "Maximaal 3 zinnen, samen onder de 50 woorden.";
+
+function userPrompt(facts: Facts): string {
+  return `Feiten:\n${JSON.stringify(compactPayload(facts), null, 2)}\n\nSchrijf de duiding.`;
 }
 
-export async function describe(facts: Facts): Promise<string> {
-  const key = cacheKey(facts);
-  const cached = fullCache.get(key);
-  if (cached) return cached;
-  const inflight = inflightCache.get(key);
-  if (inflight) return inflight;
+let client: Anthropic | undefined;
 
-  const promise = (async () => {
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) return templateFallback(facts);
+function anthropic(): Anthropic | undefined {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) return undefined;
+  client ??= new Anthropic({ apiKey, timeout: 20_000, maxRetries: 1 });
+  return client;
+}
 
-    try {
-      const client = new OpenAI({ apiKey });
-      const model = MODEL;
-      const completion = await client.chat.completions.create({
-        model,
-        messages: buildMessages(facts),
-      });
-      const text = completion.choices[0]?.message?.content?.trim();
-      const result = text && text.length > 0 ? text : templateFallback(facts);
-      fullCache.set(key, result);
-      return result;
-    } catch (err) {
-      console.error("LLM describe failed:", err);
-      return templateFallback(facts);
-    } finally {
-      inflightCache.delete(key);
-    }
-  })();
+export function cachedDescription(facts: Facts): string | undefined {
+  return fullCache.get(cacheKey(facts));
+}
 
-  inflightCache.set(key, promise);
-  setTimeout(() => fullCache.delete(key), 2 * 60 * 60 * 1000).unref?.();
-  return promise;
+function remember(key: string, text: string) {
+  fullCache.set(key, text);
+  setTimeout(() => {
+    if (fullCache.get(key) === text) fullCache.delete(key);
+  }, CACHE_TTL_MS).unref?.();
 }
 
 export async function* describeStream(facts: Facts): AsyncGenerator<string> {
@@ -107,37 +85,41 @@ export async function* describeStream(facts: Facts): AsyncGenerator<string> {
     return;
   }
 
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
+  const api = anthropic();
+  if (!api) {
     yield templateFallback(facts);
     return;
   }
 
+  let acc = "";
+  const stream = api.messages.stream({
+    model: MODEL,
+    max_tokens: 4096,
+    system: SYSTEM_PROMPT,
+    output_config: { effort: "low" },
+    messages: [{ role: "user", content: userPrompt(facts) }],
+  });
   try {
-    const client = new OpenAI({ apiKey });
-    const model = process.env.OPENAI_MODEL ?? "gpt-5-nano";
-    const stream = await client.chat.completions.create({
-      model,
-      messages: buildMessages(facts),
-      stream: true,
-    });
-
-    let acc = "";
-    for await (const chunk of stream) {
-      const delta = chunk.choices[0]?.delta?.content ?? "";
-      if (delta) {
-        acc += delta;
-        yield delta;
+    for await (const event of stream) {
+      if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
+        acc += event.delta.text;
+        yield event.delta.text;
       }
     }
-    if (acc.trim().length > 0) {
-      fullCache.set(key, acc.trim());
-      setTimeout(() => fullCache.delete(key), 2 * 60 * 60 * 1000).unref?.();
-    } else {
-      yield templateFallback(facts);
-    }
   } catch (err) {
-    console.error("LLM stream failed:", err);
+    if (err instanceof Anthropic.APIError) {
+      console.error(`Anthropic stream failed (${err.status ?? "netwerk"}):`, err.message);
+    } else {
+      console.error("Anthropic stream failed:", err);
+    }
+  } finally {
+    stream.abort();
+  }
+
+  const text = acc.trim();
+  if (text.length > 0) {
+    remember(key, text);
+  } else {
     yield templateFallback(facts);
   }
 }

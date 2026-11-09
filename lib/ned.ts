@@ -361,7 +361,12 @@ export function getBaseline(typeId: number, hourOfDay: number): Promise<number> 
   })();
 
   baselineCache.set(key, promise);
-  setTimeout(() => baselineCache.delete(key), 6 * 60 * 60 * 1000).unref?.();
+  promise.catch(() => {
+    if (baselineCache.get(key) === promise) baselineCache.delete(key);
+  });
+  setTimeout(() => {
+    if (baselineCache.get(key) === promise) baselineCache.delete(key);
+  }, 6 * 60 * 60 * 1000).unref?.();
   return promise;
 }
 

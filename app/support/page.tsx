@@ -50,7 +50,7 @@ export default function SupportPage() {
               <dt className="font-medium mb-1">Waarom verschilt het groene percentage per uur?</dt>
               <dd className="text-[15px] leading-relaxed" style={{ color: theme.dim }}>
                 De energiemix verandert constant. Overdag produceert zon meer,
-                's nachts draait wind door. Gas- en kolencentrales schalen op en
+                &apos;s nachts draait wind door. Gas- en kolencentrales schalen op en
                 af om aan de vraag te voldoen.
               </dd>
             </div>

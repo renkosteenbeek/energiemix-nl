@@ -17,6 +17,7 @@ services:
       - traefik.docker.network=edge-energiemix-nl
       - traefik.http.routers.energiemix.rule=Host(`energiemix.gentle-innovations.nl`)
       - traefik.http.routers.energiemix.entrypoints=websecure
+      - traefik.http.routers.energiemix.tls.certresolver=le
       - traefik.http.routers.energiemix.middlewares=security-headers@file
       - traefik.http.services.energiemix.loadbalancer.server.port=3000
       - traefik.http.services.energiemix.loadbalancer.serverstransport=traag@file
