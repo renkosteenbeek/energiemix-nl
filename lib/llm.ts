@@ -1,10 +1,10 @@
 import Anthropic from "@anthropic-ai/sdk";
 import type { DayFacts, Facts } from "./insights";
+import { HOUR_MS } from "./ned";
 
 const MODEL = "claude-haiku-5-5";
-
-const CACHE_TTL_MS = 2 * 60 * 60 * 1000;
-const fullCache = new Map<string, string>();
+const DESCRIPTION_TTL_MS = 2 * HOUR_MS;
+const descriptionCache = new Map<string, string>();
 
 function templateFallback(facts: Facts): string {
   if (facts.notable.length === 0) {
@@ -17,7 +17,7 @@ function momentOf(focusTime: string): "verleden" | "nu" | "toekomst" {
   const start = new Date(focusTime).getTime();
   const now = Date.now();
   if (start > now) return "toekomst";
-  return now - start < 60 * 60 * 1000 ? "nu" : "verleden";
+  return now - start < HOUR_MS ? "nu" : "verleden";
 }
 
 function compactPayload(facts: Facts) {
@@ -118,19 +118,15 @@ function anthropic(): Anthropic | undefined {
   return client;
 }
 
-export function cachedDescription(facts: Facts): string | undefined {
-  return fullCache.get(cacheKey(facts));
-}
-
-export function cachedDayDescription(facts: DayFacts): string | undefined {
-  return fullCache.get(dayCacheKey(facts));
+export function isModelConfigured(): boolean {
+  return Boolean(process.env.ANTHROPIC_API_KEY);
 }
 
 function remember(key: string, text: string) {
-  fullCache.set(key, text);
+  descriptionCache.set(key, text);
   setTimeout(() => {
-    if (fullCache.get(key) === text) fullCache.delete(key);
-  }, CACHE_TTL_MS).unref?.();
+    if (descriptionCache.get(key) === text) descriptionCache.delete(key);
+  }, DESCRIPTION_TTL_MS).unref?.();
 }
 
 export function describeStream(facts: Facts): AsyncGenerator<string> {
@@ -142,7 +138,7 @@ export function describeDayStream(facts: DayFacts): AsyncGenerator<string> {
 }
 
 async function* streamDescription(key: string, system: string, prompt: string, fallback: string): AsyncGenerator<string> {
-  const cached = fullCache.get(key);
+  const cached = descriptionCache.get(key);
   if (cached) {
     yield cached;
     return;
@@ -154,7 +150,8 @@ async function* streamDescription(key: string, system: string, prompt: string, f
     return;
   }
 
-  let acc = "";
+  let streamed = "";
+  let completed = false;
   const stream = api.messages.stream({
     model: MODEL,
     max_tokens: 4096,
@@ -165,10 +162,12 @@ async function* streamDescription(key: string, system: string, prompt: string, f
   try {
     for await (const event of stream) {
       if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
-        acc += event.delta.text;
+        streamed += event.delta.text;
         yield event.delta.text;
       }
     }
+    const final = await stream.finalMessage();
+    completed = final.stop_reason === "end_turn";
   } catch (err) {
     if (err instanceof Anthropic.APIError) {
       console.error(`Anthropic stream failed (${err.status ?? "netwerk"}):`, err.message);
@@ -179,10 +178,12 @@ async function* streamDescription(key: string, system: string, prompt: string, f
     stream.abort();
   }
 
-  const text = acc.trim();
-  if (text.length > 0) {
+  const text = streamed.trim();
+  if (completed && text.length > 0) {
     remember(key, text);
-  } else {
+  } else if (text.length === 0) {
     yield fallback;
+  } else {
+    throw new Error("Duiding onvolledig");
   }
 }

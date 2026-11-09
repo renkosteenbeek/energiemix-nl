@@ -30,9 +30,9 @@ export default function PrivacyPage() {
         <section className="mb-10">
           <h2 className="text-lg font-semibold mb-3">Welke data gebruikt de app?</h2>
           <p className="text-[15px] leading-relaxed" style={{ color: theme.dim }}>
-            De app haalt publiek beschikbare energiedata op van het Nationaal
-            Energie Dashboard (NED) via api.ned.nl. Deze data bevat geen
-            persoonlijke informatie.
+            De app haalt publiek beschikbare energiedata op via onze eigen server,
+            die deze ophaalt bij het Nationaal Energie Dashboard (NED, api.ned.nl).
+            Deze data bevat geen persoonlijke informatie.
           </p>
         </section>
 

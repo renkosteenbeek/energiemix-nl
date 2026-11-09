@@ -1,12 +1,10 @@
-import { NextResponse } from "next/server";
-import { DAILY_MIN_DAY, getGreenTimeline, NED_MAX_FORECAST_AHEAD_MS } from "@/lib/ned";
-import { getCached, setCache, withCors } from "@/lib/responseCache";
+import { DATA_START, getGreenTimeline, HOUR_MS, NED_MAX_FORECAST_AHEAD_MS } from "@/lib/ned";
+import { errorResponse, failure, getCached, jsonResponse, optionsResponse, setCache } from "@/lib/http";
 
-const HOUR_MS = 60 * 60 * 1000;
 const MAX_RANGE_HOURS = 31 * 24;
 
-export async function OPTIONS() {
-  return new Response(null, { status: 204, headers: withCors({}) });
+export function OPTIONS() {
+  return optionsResponse();
 }
 
 function floorToHour(date: Date): Date {
@@ -14,9 +12,8 @@ function floorToHour(date: Date): Date {
 }
 
 async function rangeResponse(fromParam: string | null, toParam: string | null) {
-  const earliest = new Date(`${DAILY_MIN_DAY}T00:00:00Z`).getTime() - 24 * HOUR_MS;
   const requested = floorToHour(new Date(fromParam ?? ""));
-  const from = new Date(Math.max(requested.getTime(), earliest));
+  const from = new Date(Math.max(requested.getTime(), DATA_START.getTime() - 24 * HOUR_MS));
   const to = floorToHour(new Date(toParam ?? ""));
   const hours = Math.round((to.getTime() - from.getTime()) / HOUR_MS);
   const now = Date.now();
@@ -28,20 +25,18 @@ async function rangeResponse(fromParam: string | null, toParam: string | null) {
     hours > MAX_RANGE_HOURS ||
     to.getTime() > now + NED_MAX_FORECAST_AHEAD_MS
   ) {
-    return NextResponse.json({ error: "ongeldige periode" }, { status: 400, headers: withCors({}) });
+    return errorResponse(400, "ongeldige periode");
   }
 
   const isSettled = to.getTime() < now - HOUR_MS;
+  const maxAge = isSettled ? 3600 : 300;
   const cacheKey = `timeline:${from.toISOString()}:${to.toISOString()}`;
-  const cacheHeader = isSettled ? "public, max-age=3600" : "public, max-age=300";
   const cached = getCached<unknown>(cacheKey);
-  if (cached) {
-    return NextResponse.json(cached, { headers: withCors({ "Cache-Control": cacheHeader }) });
-  }
+  if (cached) return jsonResponse(cached, maxAge);
 
   const timeline = await getGreenTimeline(from, 0, hours);
-  setCache(cacheKey, timeline, isSettled ? 3_600_000 : 300_000);
-  return NextResponse.json(timeline, { headers: withCors({ "Cache-Control": cacheHeader }) });
+  setCache(cacheKey, timeline, maxAge * 1000);
+  return jsonResponse(timeline, maxAge);
 }
 
 export async function GET(request: Request) {
@@ -55,21 +50,12 @@ export async function GET(request: Request) {
     const now = new Date();
     const cacheKey = `timeline:${now.toISOString().slice(0, 13)}`;
     const cached = getCached<unknown>(cacheKey);
-    if (cached) {
-      return NextResponse.json(cached, {
-        headers: withCors({ "Cache-Control": "public, max-age=300" }),
-      });
-    }
+    if (cached) return jsonResponse(cached, 300);
 
     const timeline = await getGreenTimeline(now, 720, 24);
     setCache(cacheKey, timeline, 300_000);
-    return NextResponse.json(timeline, {
-      headers: withCors({ "Cache-Control": "public, max-age=300" }),
-    });
-  } catch (e) {
-    return NextResponse.json(
-      { error: e instanceof Error ? e.message : "fout" },
-      { status: 500, headers: withCors({}) },
-    );
+    return jsonResponse(timeline, 300);
+  } catch (error) {
+    return failure(error);
   }
 }

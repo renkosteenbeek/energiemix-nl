@@ -1,6 +1,25 @@
 const BASE = "https://api.ned.nl/v1";
 
+export const HOUR_MS = 60 * 60 * 1000;
+export const DAY_MS = 24 * HOUR_MS;
+
+export const DATA_START_DAY = "2021-01-01";
+export const DATA_START = new Date(`${DATA_START_DAY}T00:00:00+01:00`);
+export const NED_MAX_FORECAST_AHEAD_MS = 5 * DAY_MS;
+
 export type Category = "groen" | "grijs";
+
+export const SOURCE = {
+  windOpZee: 17,
+  windOpLand: 1,
+  zon: 2,
+  biomassa: 25,
+  aardgas: 18,
+  steenkool: 19,
+  kernenergie: 20,
+  afval: 21,
+  overig: 26,
+} as const;
 
 export type SourceMeta = {
   typeId: number;
@@ -10,17 +29,16 @@ export type SourceMeta = {
 };
 
 export const SOURCES: SourceMeta[] = [
-  { typeId: 17, label: "Wind op zee",  category: "groen", color: "#1B4F7E" },
-  { typeId: 1,  label: "Wind op land", category: "groen", color: "#5896D1" },
-  { typeId: 2,  label: "Zon",          category: "groen", color: "#F5B13B" },
-  { typeId: 25, label: "Biomassa",     category: "groen", color: "#7C956E" },
-  { typeId: 18, label: "Aardgas",      category: "grijs", color: "#E07A4E" },
-  { typeId: 19, label: "Steenkool",    category: "grijs", color: "var(--color-coal)" },
-  { typeId: 20, label: "Kernenergie",  category: "grijs", color: "#8E5BA7" },
-  { typeId: 21, label: "Afval",        category: "grijs", color: "#9B7E5A" },
-  { typeId: 26, label: "Overig",       category: "grijs", color: "#8D95A0" },
+  { typeId: SOURCE.windOpZee, label: "Wind op zee", category: "groen", color: "#1B4F7E" },
+  { typeId: SOURCE.windOpLand, label: "Wind op land", category: "groen", color: "#5896D1" },
+  { typeId: SOURCE.zon, label: "Zon", category: "groen", color: "#F5B13B" },
+  { typeId: SOURCE.biomassa, label: "Biomassa", category: "groen", color: "#7C956E" },
+  { typeId: SOURCE.aardgas, label: "Aardgas", category: "grijs", color: "#E07A4E" },
+  { typeId: SOURCE.steenkool, label: "Steenkool", category: "grijs", color: "var(--color-coal)" },
+  { typeId: SOURCE.kernenergie, label: "Kernenergie", category: "grijs", color: "#8E5BA7" },
+  { typeId: SOURCE.afval, label: "Afval", category: "grijs", color: "#9B7E5A" },
+  { typeId: SOURCE.overig, label: "Overig", category: "grijs", color: "#8D95A0" },
 ];
-
 
 type Utilization = {
   validfrom: string;
@@ -39,17 +57,14 @@ type HydraResponse<T> = {
 };
 
 const CLASSIFICATION = { forecast: 1, current: 2 } as const;
-
-export const NED_MIN_DATE = new Date("2016-01-01T00:00:00Z");
-export const NED_MAX_FORECAST_AHEAD_MS = 5 * 24 * 60 * 60 * 1000;
+const GRANULARITY = { hour: 5, day: 6 } as const;
 
 function dateOnly(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
 function pickClassification(at: Date): number {
-  const now = Date.now();
-  return at.getTime() > now - 60 * 60 * 1000 ? CLASSIFICATION.forecast : CLASSIFICATION.current;
+  return at.getTime() > Date.now() - HOUR_MS ? CLASSIFICATION.forecast : CLASSIFICATION.current;
 }
 
 async function fetchUtilizations(params: {
@@ -57,7 +72,7 @@ async function fetchUtilizations(params: {
   classification: number;
   after: string;
   before: string;
-  granularity?: number;
+  granularity: number;
 }): Promise<Utilization[]> {
   const apiKey = process.env.NED_API_KEY;
   if (!apiKey) throw new Error("NED_API_KEY niet gezet");
@@ -65,7 +80,7 @@ async function fetchUtilizations(params: {
   const qs = new URLSearchParams({
     point: "0",
     type: String(params.typeId),
-    granularity: String(params.granularity ?? 5),
+    granularity: String(params.granularity),
     granularitytimezone: "1",
     classification: String(params.classification),
     activity: "1",
@@ -102,6 +117,28 @@ async function fetchUtilizations(params: {
   return collected;
 }
 
+type SourceData = { source: SourceMeta; data: Utilization[] };
+
+function fetchAllSources(params: {
+  classification: number;
+  after: string;
+  before: string;
+  granularity: number;
+}): Promise<SourceData[]> {
+  return Promise.all(
+    SOURCES.map(async (source) => ({ source, data: await fetchUtilizations({ typeId: source.typeId, ...params }) })),
+  );
+}
+
+function fetchHourlyAround(from: Date, to: Date, classification: number): Promise<SourceData[]> {
+  return fetchAllSources({
+    classification,
+    after: dateOnly(from),
+    before: dateOnly(new Date(to.getTime() + DAY_MS)),
+    granularity: GRANULARITY.hour,
+  });
+}
+
 export type SourceSlice = {
   typeId: number;
   label: string;
@@ -118,7 +155,6 @@ export type TimePoint = {
   forecast?: boolean;
 };
 
-
 export type MixResult = {
   focusTime: string;
   greenPct: number;
@@ -129,7 +165,7 @@ export type MixResult = {
 
 type Bucket = { total: number; green: number; bySource: Map<number, number> };
 
-function mergeIntoBuckets(perType: { source: SourceMeta; data: Utilization[] }[]): Map<string, Bucket> {
+function mergeIntoBuckets(perType: SourceData[]): Map<string, Bucket> {
   const buckets = new Map<string, Bucket>();
   for (const { source, data } of perType) {
     for (const u of data) {
@@ -177,26 +213,11 @@ function pickFocus(series: TimePoint[], at: Date): TimePoint | undefined {
 }
 
 export async function getMixAt(at: Date): Promise<MixResult> {
-  const classification = pickClassification(at);
-  const after = new Date(at.getTime() - 14 * 60 * 60 * 1000);
-  const before = new Date(at.getTime() + 14 * 60 * 60 * 1000);
+  const after = new Date(at.getTime() - 14 * HOUR_MS);
+  const before = new Date(at.getTime() + 14 * HOUR_MS);
+  const buckets = mergeIntoBuckets(await fetchHourlyAround(after, before, pickClassification(at)));
 
-  const perType = await Promise.all(
-    SOURCES.map(async (s) => ({
-      source: s,
-      data: await fetchUtilizations({
-        typeId: s.typeId,
-        classification,
-        after: dateOnly(after),
-        before: dateOnly(new Date(before.getTime() + 24 * 60 * 60 * 1000)),
-      }),
-    })),
-  );
-
-  const buckets = mergeIntoBuckets(perType);
-  const fullSeries = bucketsToSeries(buckets);
-
-  const series = fullSeries.filter((p) => {
+  const series = bucketsToSeries(buckets).filter((p) => {
     const t = new Date(p.time).getTime();
     return t >= after.getTime() && t <= before.getTime();
   });
@@ -227,23 +248,8 @@ export async function getMixAt(at: Date): Promise<MixResult> {
   };
 }
 
-async function fetchBuckets(
-  from: Date,
-  to: Date,
-  classification: number,
-): Promise<Map<string, Bucket>> {
-  const perType = await Promise.all(
-    SOURCES.map(async (s) => ({
-      source: s,
-      data: await fetchUtilizations({
-        typeId: s.typeId,
-        classification,
-        after: dateOnly(from),
-        before: dateOnly(new Date(to.getTime() + 24 * 60 * 60 * 1000)),
-      }),
-    })),
-  );
-  const buckets = mergeIntoBuckets(perType);
+async function fetchBuckets(from: Date, to: Date, classification: number): Promise<Map<string, Bucket>> {
+  const buckets = mergeIntoBuckets(await fetchHourlyAround(from, to, classification));
   for (const time of [...buckets.keys()]) {
     const t = new Date(time).getTime();
     if (t < from.getTime() || t > to.getTime()) buckets.delete(time);
@@ -256,32 +262,30 @@ export async function getGreenTimeline(
   hoursBack: number,
   hoursForward: number,
 ): Promise<TimePoint[]> {
-  const from = new Date(centerAt.getTime() - hoursBack * 60 * 60 * 1000);
-  const to = new Date(centerAt.getTime() + hoursForward * 60 * 60 * 1000);
+  const from = new Date(centerAt.getTime() - hoursBack * HOUR_MS);
+  const to = new Date(centerAt.getTime() + hoursForward * HOUR_MS);
   const now = Date.now();
-  const OVERLAP_MS = 3 * 60 * 60 * 1000;
+  const overlap = 3 * HOUR_MS;
 
   const ranges: { from: Date; to: Date; classification: number }[] = [];
 
   if (from.getTime() < now) {
     ranges.push({
       from,
-      to: new Date(Math.min(to.getTime(), now + OVERLAP_MS)),
+      to: new Date(Math.min(to.getTime(), now + overlap)),
       classification: CLASSIFICATION.current,
     });
   }
 
-  if (to.getTime() > now - OVERLAP_MS) {
+  if (to.getTime() > now - overlap) {
     ranges.push({
-      from: new Date(Math.max(from.getTime(), now - OVERLAP_MS)),
+      from: new Date(Math.max(from.getTime(), now - overlap)),
       to,
       classification: CLASSIFICATION.forecast,
     });
   }
 
-  const results = await Promise.all(
-    ranges.map((r) => fetchBuckets(r.from, r.to, r.classification)),
-  );
+  const results = await Promise.all(ranges.map((r) => fetchBuckets(r.from, r.to, r.classification)));
 
   const mergedBuckets = new Map<string, Bucket>();
   for (const buckets of results) {
@@ -293,49 +297,20 @@ export async function getGreenTimeline(
     }
   }
 
-  const nowHourStart = new Date(now);
-  nowHourStart.setUTCMinutes(0, 0, 0);
-  const nowHourStartMs = nowHourStart.getTime();
-
-  const sortedTimes = [...mergedBuckets.keys()].sort();
+  const nowHourStartMs = Math.floor(now / HOUR_MS) * HOUR_MS;
   const series: TimePoint[] = [];
-
-  for (const time of sortedTimes) {
+  for (const time of [...mergedBuckets.keys()].sort()) {
     const bucket = mergedBuckets.get(time)!;
     if (bucket.total <= 0) continue;
-    const tMs = new Date(time).getTime();
-    const isForecast = tMs > nowHourStartMs;
     series.push({
       time,
       greenPct: (bucket.green / bucket.total) * 100,
       totalKWh: bucket.total,
-      forecast: isForecast,
+      forecast: new Date(time).getTime() > nowHourStartMs,
     });
   }
 
   return series;
-}
-
-export async function getMixSeries(from: Date, to: Date): Promise<TimePoint[]> {
-  const classification = pickClassification(new Date((from.getTime() + to.getTime()) / 2));
-
-  const perType = await Promise.all(
-    SOURCES.map(async (s) => ({
-      source: s,
-      data: await fetchUtilizations({
-        typeId: s.typeId,
-        classification,
-        after: dateOnly(from),
-        before: dateOnly(new Date(to.getTime() + 24 * 60 * 60 * 1000)),
-      }),
-    })),
-  );
-
-  const buckets = mergeIntoBuckets(perType);
-  return bucketsToSeries(buckets).filter((p) => {
-    const t = new Date(p.time).getTime();
-    return t >= from.getTime() && t <= to.getTime();
-  });
 }
 
 const baselineCache = new Map<string, Promise<number>>();
@@ -347,17 +322,17 @@ export function getBaseline(typeId: number, hourOfDay: number): Promise<number> 
 
   const promise = (async () => {
     const before = new Date();
-    const after = new Date(before.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const after = new Date(before.getTime() - 30 * DAY_MS);
     const data = await fetchUtilizations({
       typeId,
       classification: CLASSIFICATION.current,
       after: dateOnly(after),
       before: dateOnly(before),
+      granularity: GRANULARITY.hour,
     });
     const matching = data.filter((u) => new Date(u.validfrom).getUTCHours() === hourOfDay);
     if (matching.length === 0) return 0;
-    const sum = matching.reduce((s, u) => s + u.volume, 0);
-    return sum / matching.length;
+    return matching.reduce((s, u) => s + u.volume, 0) / matching.length;
   })();
 
   baselineCache.set(key, promise);
@@ -366,11 +341,9 @@ export function getBaseline(typeId: number, hourOfDay: number): Promise<number> 
   });
   setTimeout(() => {
     if (baselineCache.get(key) === promise) baselineCache.delete(key);
-  }, 6 * 60 * 60 * 1000).unref?.();
+  }, 6 * HOUR_MS).unref?.();
   return promise;
 }
-
-export const DAILY_MIN_DAY = "2021-01-01";
 
 export type DayPoint = {
   date: string;
@@ -397,20 +370,15 @@ export function shiftDay(day: string, days: number): string {
 }
 
 export async function getDailyRange(fromDay: string, toDay: string): Promise<DayPoint[]> {
-  const perType = await Promise.all(
-    SOURCES.map((s) =>
-      fetchUtilizations({
-        typeId: s.typeId,
-        classification: CLASSIFICATION.current,
-        after: shiftDay(fromDay, -2),
-        before: shiftDay(toDay, 2),
-        granularity: 6,
-      }),
-    ),
-  );
+  const perType = await fetchAllSources({
+    classification: CLASSIFICATION.current,
+    after: shiftDay(fromDay, -2),
+    before: shiftDay(toDay, 2),
+    granularity: GRANULARITY.day,
+  });
 
   const byDay = new Map<string, number[]>();
-  perType.forEach((data, sourceIndex) => {
+  perType.forEach(({ data }, sourceIndex) => {
     for (const u of data) {
       const day = toAmsterdamDay(new Date(u.validfrom));
       if (day < fromDay || day > toDay) continue;
@@ -434,6 +402,10 @@ const yearCacheKey = Symbol.for("energiemix.yearCache");
 const globalWithCache = globalThis as typeof globalThis & { [yearCacheKey]?: Map<number, YearCacheEntry> };
 const yearCache = (globalWithCache[yearCacheKey] ??= new Map<number, YearCacheEntry>());
 
+export function firstDataYear(): number {
+  return Number(DATA_START_DAY.slice(0, 4));
+}
+
 export function getYear(year: number): Promise<DayPoint[]> {
   const now = Date.now();
   const cached = yearCache.get(year);
@@ -441,8 +413,9 @@ export function getYear(year: number): Promise<DayPoint[]> {
 
   const today = toAmsterdamDay(new Date(now));
   const isCurrent = today.startsWith(`${year}-`);
+  const isSettling = isCurrent || shiftDay(today, -3).startsWith(`${year}-`);
   const promise = getDailyRange(`${year}-01-01`, isCurrent ? today : `${year}-12-31`);
-  yearCache.set(year, { expiresAt: now + (isCurrent ? 30 * 60 * 1000 : 24 * 60 * 60 * 1000), promise });
+  yearCache.set(year, { expiresAt: now + (isSettling ? 30 * 60 * 1000 : DAY_MS), promise });
   promise.catch(() => {
     if (yearCache.get(year)?.promise === promise) yearCache.delete(year);
   });
@@ -456,10 +429,8 @@ export function latestAvailableHour(): Date {
 }
 
 export function clampAt(at: Date): Date {
-  const now = Date.now();
-  const min = NED_MIN_DATE.getTime();
-  const max = now + NED_MAX_FORECAST_AHEAD_MS;
-  return new Date(Math.min(Math.max(at.getTime(), min), max));
+  const max = Date.now() + NED_MAX_FORECAST_AHEAD_MS;
+  return new Date(Math.min(Math.max(at.getTime(), DATA_START.getTime()), max));
 }
 
 export function colorForGreenPct(pct: number): string {

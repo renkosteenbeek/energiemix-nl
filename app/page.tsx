@@ -30,7 +30,7 @@ export default async function Page() {
       prefetchBaselines(at.getUTCHours()),
     ]);
     timeline = rawTimeline;
-    const facts = await computeFacts(at, mix);
+    const facts = await computeFacts(mix);
     initial = { at: at.toISOString(), mix, facts, story: "" };
   } catch (e) {
     error = e instanceof Error ? e.message : "Onbekende fout";

@@ -41,6 +41,6 @@ yarn-error.log*
 next-env.d.ts
 
 # Capacitor build artifacts
-ios/App/Pods/
 android/.gradle/
 android/app/build/
+__pycache__/
